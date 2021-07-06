@@ -37,7 +37,7 @@ namespace System.Windows.Forms
         private const int LocationIndexBottom = 2;
         private const int LocationIndexLeft = 3;
         private const int LocationTotal = 4;
-        private readonly Hashtable _tools = new Hashtable();
+        private readonly Hashtable _tools = new();
         private readonly int[] _delayTimes = new int[4];
         private bool _auto = true;
         private bool _showAlways;
@@ -51,7 +51,7 @@ namespace System.Windows.Forms
         private string _toolTipTitle = string.Empty;
         private ToolTipIcon _toolTipIcon = ToolTipIcon.None;
         private ToolTipTimer _timer;
-        private readonly Hashtable _owners = new Hashtable();
+        private readonly Hashtable _owners = new();
         private bool _stripAmpersands;
         private bool _useAnimation = true;
         private bool _useFading = true;
@@ -70,7 +70,7 @@ namespace System.Windows.Forms
         ///  Adding a tool twice breaks the ToolTip, so we need to track which
         ///  tools are created to prevent this.
         /// </summary>
-        private readonly Hashtable _created = new Hashtable();
+        private readonly Hashtable _created = new();
 
         private bool _cancelled;
 
@@ -79,10 +79,7 @@ namespace System.Windows.Forms
         /// </summary>
         public ToolTip(IContainer cont) : this()
         {
-            if (cont is null)
-            {
-                throw new ArgumentNullException(nameof(cont));
-            }
+            _ = cont ?? throw new ArgumentNullException(nameof(cont));
 
             cont.Add(this);
         }
@@ -143,7 +140,7 @@ namespace System.Windows.Forms
             {
                 if (value < 0)
                 {
-                   throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(AutomaticDelay), value, 0));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(AutomaticDelay), value, 0));
                 }
 
                 SetDelayTime((int)TTDT.AUTOMATIC, value);
@@ -536,14 +533,14 @@ namespace System.Windows.Forms
                 _topLevelControl = baseVar;
                 if (baseVar is not null)
                 {
-                    baseVar.HandleCreated += new EventHandler(TopLevelCreated);
-                    baseVar.HandleDestroyed += new EventHandler(TopLevelDestroyed);
+                    baseVar.HandleCreated += TopLevelCreated;
+                    baseVar.HandleDestroyed += TopLevelDestroyed;
                     if (baseVar.IsHandleCreated)
                     {
                         TopLevelCreated(baseVar, EventArgs.Empty);
                     }
 
-                    baseVar.ParentChanged += new EventHandler(OnTopLevelPropertyChanged);
+                    baseVar.ParentChanged += OnTopLevelPropertyChanged;
                 }
 
                 return baseVar;
@@ -621,9 +618,10 @@ namespace System.Windows.Forms
         /// </summary>
         private void AdjustBaseFromAuto()
         {
-            _delayTimes[(int)TTDT.RESHOW] = _delayTimes[(int)TTDT.AUTOMATIC] / ReshowRatio;
-            _delayTimes[(int)TTDT.AUTOPOP] = _delayTimes[(int)TTDT.AUTOMATIC] * AutoPopRatio;
-            _delayTimes[(int)TTDT.INITIAL] = _delayTimes[(int)TTDT.AUTOMATIC];
+            int delay = _delayTimes[(int)TTDT.AUTOMATIC];
+            _delayTimes[(int)TTDT.RESHOW] = delay / ReshowRatio;
+            _delayTimes[(int)TTDT.AUTOPOP] = delay * AutoPopRatio;
+            _delayTimes[(int)TTDT.INITIAL] = delay;
         }
 
         /// <summary>
@@ -689,9 +687,9 @@ namespace System.Windows.Forms
         {
             if (_topLevelControl is not null)
             {
-                _topLevelControl.ParentChanged -= new EventHandler(OnTopLevelPropertyChanged);
-                _topLevelControl.HandleCreated -= new EventHandler(TopLevelCreated);
-                _topLevelControl.HandleDestroyed -= new EventHandler(TopLevelDestroyed);
+                _topLevelControl.ParentChanged -= OnTopLevelPropertyChanged;
+                _topLevelControl.HandleCreated -= TopLevelCreated;
+                _topLevelControl.HandleDestroyed -= TopLevelDestroyed;
             }
         }
 
@@ -881,7 +879,7 @@ namespace System.Windows.Forms
                                 && _topLevelControl is not null
                                 && _topLevelControl.IsHandleCreated
                                 && !_isDisposing;
-            if (!(_topLevelControl is Form topForm) || (topForm is not null && !topForm.Modal))
+            if (_topLevelControl is not Form topForm || (topForm is not null && !topForm.Modal))
             {
                 handlesCreated = handlesCreated && GetHandleCreated();
             }
@@ -917,7 +915,7 @@ namespace System.Windows.Forms
                     // up to the Deactivated event to Hide the Shown tooltip
                     if (TopLevelControl is Form baseFrom)
                     {
-                        baseFrom.Deactivate -= new EventHandler(BaseFormDeactivate);
+                        baseFrom.Deactivate -= BaseFormDeactivate;
                     }
                 }
                 finally
@@ -1121,7 +1119,7 @@ namespace System.Windows.Forms
         /// </summary>
         public void RemoveAll()
         {
-            Control[] regions = new Control[_tools.Keys.Count];
+            var regions = new Control[_tools.Keys.Count];
             _tools.Keys.CopyTo(regions, 0);
             for (int i = 0; i < regions.Length; i++)
             {
@@ -1130,8 +1128,8 @@ namespace System.Windows.Forms
                     DestroyRegion(regions[i]);
                 }
 
-                regions[i].HandleCreated -= new EventHandler(HandleCreated);
-                regions[i].HandleDestroyed -= new EventHandler(HandleDestroyed);
+                regions[i].HandleCreated -= HandleCreated;
+                regions[i].HandleDestroyed -= HandleDestroyed;
 
                 KeyboardToolTipStateMachine.Instance.Unhook(regions[i], this);
             }
@@ -1177,7 +1175,7 @@ namespace System.Windows.Forms
         /// </summary>
         public void SetToolTip(Control control, string caption)
         {
-            TipInfo info = new (caption, TipInfo.Type.Auto);
+            TipInfo info = new(caption, TipInfo.Type.Auto);
             SetToolTipInternal(control, info);
         }
 
@@ -1204,8 +1202,8 @@ namespace System.Windows.Forms
 
             if (!empty && !exists)
             {
-                control.HandleCreated += new EventHandler(HandleCreated);
-                control.HandleDestroyed += new EventHandler(HandleDestroyed);
+                control.HandleCreated += HandleCreated;
+                control.HandleDestroyed += HandleDestroyed;
 
                 if (control.IsHandleCreated)
                 {
@@ -1226,8 +1224,8 @@ namespace System.Windows.Forms
                 }
                 else if (empty && exists && !DesignMode)
                 {
-                    control.HandleCreated -= new EventHandler(HandleCreated);
-                    control.HandleDestroyed -= new EventHandler(HandleDestroyed);
+                    control.HandleCreated -= HandleCreated;
+                    control.HandleDestroyed -= HandleDestroyed;
 
                     if (control.IsHandleCreated)
                     {
@@ -1753,7 +1751,7 @@ namespace System.Windows.Forms
                 Form baseFrom = tool.FindForm();
                 if (baseFrom is not null)
                 {
-                    baseFrom.Deactivate -= new EventHandler(BaseFormDeactivate);
+                    baseFrom.Deactivate -= BaseFormDeactivate;
                 }
             }
 
@@ -1857,7 +1855,7 @@ namespace System.Windows.Forms
                 Form baseFrom = tool.FindForm();
                 if (baseFrom is not null)
                 {
-                    baseFrom.Deactivate += new EventHandler(BaseFormDeactivate);
+                    baseFrom.Deactivate += BaseFormDeactivate;
                 }
             }
         }
@@ -1871,7 +1869,7 @@ namespace System.Windows.Forms
             {
                 _timer = new ToolTipTimer(owner);
                 // Add the timer handler
-                _timer.Tick += new EventHandler(TimerHandler);
+                _timer.Tick += TimerHandler;
             }
 
             _timer.Interval = interval;
@@ -2239,8 +2237,8 @@ namespace System.Windows.Forms
                 _tools.Remove(control);
                 _owners.Remove(window.Handle);
 
-                control.HandleCreated -= new EventHandler(HandleCreated);
-                control.HandleDestroyed -= new EventHandler(HandleDestroyed);
+                control.HandleCreated -= HandleCreated;
+                control.HandleDestroyed -= HandleDestroyed;
                 _created.Remove(control);
 
                 if (_originalPopupDelay != 0)
