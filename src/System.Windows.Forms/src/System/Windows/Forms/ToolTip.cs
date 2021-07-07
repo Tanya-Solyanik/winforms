@@ -91,6 +91,8 @@ namespace System.Windows.Forms
         {
             _window = new ToolTipNativeWindow(this);
             _auto = true;
+            // Start with a hardcoded delay because when this constructor is invoked at design time,
+            // native tooltip handle is not yet created and we can't quety the windows defaults.
             _delayTimes[(int)TTDT.AUTOMATIC] = DefaultDelay;
             AdjustBaseFromAuto();
         }
@@ -166,6 +168,11 @@ namespace System.Windows.Forms
                 if (value < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(AutoPopDelay), value, 0));
+                }
+
+                if (value == DefaultDelay * AutoPopRatio)
+                {
+                    value = -1;
                 }
 
                 SetDelayTime(TTDT.AUTOPOP, value);
@@ -741,9 +748,14 @@ namespace System.Windows.Forms
             // Setting the max width has the added benefit of enabling multiline tool tips.
             User32.SendMessageW(this, (User32.WM)TTM.SETMAXTIPWIDTH, IntPtr.Zero, (IntPtr)SystemInformation.MaxWindowTrackSize.Width);
 
+            // Was the most recent SETDELAYTIME message setting the automaric delay?
             if (_auto)
             {
-                SetDelayTime(TTDT.AUTOMATIC, _delayTimes[(int)TTDT.AUTOMATIC]);
+                if (AutomaticDelay != DefaultDelay)
+                {
+                    SetDelayTime(TTDT.AUTOMATIC, _delayTimes[(int)TTDT.AUTOMATIC]);
+                }
+
                 _delayTimes[(int)TTDT.AUTOPOP] = GetDelayTime(TTDT.AUTOPOP);
                 _delayTimes[(int)TTDT.INITIAL] = GetDelayTime(TTDT.INITIAL);
                 _delayTimes[(int)TTDT.RESHOW] = GetDelayTime(TTDT.RESHOW);
@@ -1245,6 +1257,11 @@ namespace System.Windows.Forms
             }
         }
 
+        internal bool IsPersistent
+        {
+            get => AutoPopDelay == DefaultDelay * AutoPopRatio;
+        }
+
         /// <summary>
         ///  Returns true if the AutomaticDelay property should be persisted.
         /// </summary>
@@ -1480,9 +1497,9 @@ namespace System.Windows.Forms
                 throw new ArgumentNullException(nameof(tool));
             }
 
-            if (duration < 0)
+            if (duration < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(duration), string.Format(SR.InvalidLowBoundArgumentEx, nameof(duration), (duration).ToString(CultureInfo.CurrentCulture), 0));
+                throw new ArgumentOutOfRangeException(nameof(duration), string.Format(SR.InvalidLowBoundArgumentEx, nameof(duration), (duration).ToString(CultureInfo.CurrentCulture), -1));
             }
 
             Rectangle toolRectangle = tool.GetNativeScreenRectangle();
@@ -1513,7 +1530,10 @@ namespace System.Windows.Forms
 
             SetTrackPosition(pointX, pointY);
             IsActivatedByKeyboard = true;
-            StartTimer(tool.GetOwnerWindow(), duration);
+            if (duration >= 0)
+            {
+                StartTimer(tool.GetOwnerWindow(), duration);
+            }
         }
 
         private bool TryGetBubbleSize(IKeyboardToolTip tool, Rectangle toolRectangle, out Size bubbleSize)

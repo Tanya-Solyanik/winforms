@@ -14256,10 +14256,20 @@ namespace System.Windows.Forms
 
         internal virtual void OnKeyboardToolTipHook(ToolTip toolTip)
         {
+            KeyDown += Control_KeyDown;
+        }
+
+        private void Control_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.ControlKey)
+            {
+                KeyboardToolTipStateMachine.Instance.CtrlHide();
+            }
         }
 
         internal virtual void OnKeyboardToolTipUnhook(ToolTip toolTip)
         {
+            KeyDown -= Control_KeyDown;
         }
 
         internal virtual Rectangle GetToolNativeScreenRectangle()

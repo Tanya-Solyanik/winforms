@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.Win32;
 using static Interop;
 
 namespace System.Windows.Forms
@@ -51,6 +52,8 @@ namespace System.Windows.Forms
         private SendOrPostCallback _refocusDelayExpirationCallback;
 
         private readonly WeakReference<IKeyboardToolTip> _lastFocusedTool = new(null);
+
+        private static bool? s_accessibleToolTipsEnabled;
 
         private KeyboardToolTipStateMachine()
         {
@@ -193,14 +196,26 @@ namespace System.Windows.Forms
         private SmState ShowToolTip(IKeyboardToolTip tool, ToolTip toolTip)
         {
             string toolTipText = tool.GetCaptionForTool(toolTip);
-            int autoPopDelay = toolTip.GetDelayTime(ComCtl32.TTDT.AUTOPOP);
+
+            int autoPopDelay = toolTip.IsPersistent && AccessibleToolTipsEnabled ?
+                -1 :
+                toolTip.GetDelayTime(ComCtl32.TTDT.AUTOPOP);
+
             if (!_currentTool.IsHoveredWithMouse())
             {
                 toolTip.ShowKeyboardToolTip(toolTipText, _currentTool, autoPopDelay);
             }
 
-            StartTimer(autoPopDelay,
-                GetOneRunTickHandler((Timer sender) => Transit(SmEvent.AutoPopupDelayTimerExpired, _currentTool)));
+            if (autoPopDelay != -1)
+            {
+                StartTimer(autoPopDelay,
+                    GetOneRunTickHandler((Timer sender) => Transit(SmEvent.AutoPopupDelayTimerExpired, _currentTool)));
+            }
+            else
+            {
+                ResetTimer();
+            }
+
             return SmState.Shown;
         }
 
@@ -209,7 +224,13 @@ namespace System.Windows.Forms
             _currentTool = tool;
             ResetTimer();
             StartTimer(toolTip.GetDelayTime(ComCtl32.TTDT.INITIAL),
-                GetOneRunTickHandler((Timer sender) => Transit(SmEvent.InitialDelayTimerExpired, _currentTool)));
+               // GetOneRunTickHandler((Timer sender) => Transit(SmEvent.InitialDelayTimerExpired, _currentTool)));
+               (s, e) =>
+               {
+                   _timer.Stop();
+                   _timer.ClearTimerTickHandlers();
+                   Transit(SmEvent.InitialDelayTimerExpired, _currentTool);
+               });
 
             return SmState.ReadyForInitShow;
         }
@@ -217,7 +238,10 @@ namespace System.Windows.Forms
         private void StartTimer(int interval, EventHandler eventHandler)
         {
             _timer.Interval = interval;
+            //_timer.Tick += eventHandler;
+            // System.Threading timer instead?
             _timer.Tick += eventHandler;
+
             _timer.Start();
         }
 
@@ -260,6 +284,22 @@ namespace System.Windows.Forms
                     FullFsmReset();
                 }
             }
+        }
+
+        internal void CtrlHide()
+        {
+            if (_currentState == SmState.Shown && _currentTool != null)
+            {
+                ToolTip currentToolTip = _toolToTip[_currentTool];
+                if (currentToolTip != null && currentToolTip.IsPersistent && AccessibleToolTipsEnabled)
+                {
+                    currentToolTip.HideToolTip(_currentTool);
+                }
+            }
+
+            ResetTimer();
+            _currentTool = null;
+            _currentState = SmState.Hidden;
         }
 
         private SmState FullFsmReset()
@@ -307,6 +347,28 @@ namespace System.Windows.Forms
             if (_currentTool != null && _toolToTip[_currentTool] == sender)
             {
                 FullFsmReset();
+            }
+        }
+
+        private static bool AccessibleToolTipsEnabled
+        {
+            get
+            {
+                if (!s_accessibleToolTipsEnabled.HasValue)
+                {
+                    using RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Shell");
+                    if (key is not null)
+                    {
+                        int value = (int)key.GetValue("AccessibleTooltips", defaultValue: 1);
+                        s_accessibleToolTipsEnabled = value != 0;
+                    }
+                    else
+                    {
+                        s_accessibleToolTipsEnabled = true;
+                    }
+                }
+
+                return s_accessibleToolTipsEnabled.Value;
             }
         }
 
