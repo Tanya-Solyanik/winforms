@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "AppUnderTest": {
+      "commandName": "Project",
+      "commandLineArgs": "18",
+      "nativeDebugging": false
+    }
+  }
+}
