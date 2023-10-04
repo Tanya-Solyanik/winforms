@@ -123,11 +123,16 @@ public partial class ErrorProvider
                 PInvoke.TTM_SETMAXTIPWIDTH,
                 (WPARAM)0,
                 (LPARAM)SystemInformation.MaxWindowTrackSize.Width);
-            PInvoke.SetWindowPos(
-                _tipWindow,
-                HWND.HWND_TOP,
-                0, 0, 0, 0,
-                SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
+
+            if (!_provider.DesignMode)
+            {
+                PInvoke.SetWindowPos(
+                    _tipWindow,
+                    HWND.HWND_TOP,
+                    0, 0, 0, 0,
+                    SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
+            }
+
             PInvoke.SendMessage(_tipWindow, PInvoke.TTM_SETDELAYTIME, (WPARAM)PInvoke.TTDT_INITIAL);
 
             return true;
@@ -150,17 +155,21 @@ public partial class ErrorProvider
                 _tipWindow = null;
             }
 
-            // Hide the window and invalidate the parent to ensure that we leave no visual artifacts.
-            // Given that we have an unusual region window, this is needed.
-            PInvoke.SetWindowPos(
-                this,
-                HWND.HWND_TOP,
-                _windowBounds.X,
-                _windowBounds.Y,
-                _windowBounds.Width,
-                _windowBounds.Height,
-                SET_WINDOW_POS_FLAGS.SWP_HIDEWINDOW | SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOMOVE);
-            _parent?.Invalidate(true);
+            if (!_provider.DesignMode)
+            {
+                // Hide the window and invalidate the parent to ensure that we leave no visual artifacts.
+                // Given that we have an unusual region window, this is needed.
+                PInvoke.SetWindowPos(
+                    this,
+                    HWND.HWND_TOP,
+                    _windowBounds.X,
+                    _windowBounds.Y,
+                    _windowBounds.Width,
+                    _windowBounds.Height,
+                    SET_WINDOW_POS_FLAGS.SWP_HIDEWINDOW | SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOMOVE);
+                _parent?.Invalidate(true);
+            }
+
             DestroyHandle();
         }
 
