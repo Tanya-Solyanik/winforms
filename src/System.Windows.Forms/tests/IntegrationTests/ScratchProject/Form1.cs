@@ -12,5 +12,14 @@ public partial class Form1 : Form
     public Form1()
     {
         InitializeComponent();
+        propertyGrid1.SelectedObject = new Class1();
+    }
+
+    internal class Class1
+    {
+        //[SRCategory(nameof(SR.CatAccessibility))]
+        //public int Thing1 { get; set; }
+
+        public int Thing2 { get; set; }
     }
 }

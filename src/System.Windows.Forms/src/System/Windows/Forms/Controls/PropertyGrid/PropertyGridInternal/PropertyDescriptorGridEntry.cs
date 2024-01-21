@@ -32,6 +32,7 @@ internal partial class PropertyDescriptorGridEntry : GridEntry
     private static IEventBindingService? s_targetBindingService;
     private static IComponent? s_targetComponent;
     private static EventDescriptor? s_targetEventdesc;
+    private static SRCategoryAttribute? s_miscCategoryAttribute;
 
     internal PropertyDescriptorGridEntry(
         PropertyGrid ownerGrid,
@@ -48,7 +49,23 @@ internal partial class PropertyDescriptorGridEntry : GridEntry
     public override bool AllowMerge
         => PropertyDescriptor.GetAttribute<MergablePropertyAttribute>()?.IsDefaultAttribute() ?? true;
 
-    protected override AttributeCollection Attributes => PropertyDescriptor.Attributes;
+    protected override AttributeCollection Attributes
+    {
+        get
+        {
+            var collection = PropertyDescriptor.Attributes;
+            // Attributes collection creates default attribute if an attribute of the specified type is not present on the property descriptor,
+            // thus this value  is guaranteed to not be null.
+            var attribute = (CategoryAttribute)collection[typeof(CategoryAttribute)]!;
+            if (attribute.IsDefaultAttribute())
+            {
+                s_miscCategoryAttribute ??= new(SR.PropertyCategoryMisc);
+                collection = AttributeCollection.FromExisting(collection, [s_miscCategoryAttribute]);
+            }
+
+            return collection;
+        }
+    }
 
     public override string? HelpKeyword
     {

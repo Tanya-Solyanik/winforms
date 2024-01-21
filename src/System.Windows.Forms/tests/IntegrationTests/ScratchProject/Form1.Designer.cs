@@ -22,7 +22,6 @@ partial class Form1
         }
         base.Dispose(disposing);
     }
-
     #region Windows Form Designer generated code
 
     /// <summary>
@@ -31,11 +30,28 @@ partial class Form1
     /// </summary>
     private void InitializeComponent()
     {
-        this.components = new System.ComponentModel.Container();
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        this.ClientSize = new System.Drawing.Size(800, 450);
-        this.Text = "Form1";
+        propertyGrid1 = new PropertyGrid();
+        SuspendLayout();
+        // 
+        // propertyGrid1
+        // 
+        propertyGrid1.Location = new Point(0, 0);
+        propertyGrid1.Name = "propertyGrid1";
+        propertyGrid1.Size = new Size(361, 335);
+        propertyGrid1.TabIndex = 0;
+        // 
+        // Form1
+        // 
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(800, 450);
+        Controls.Add(propertyGrid1);
+        Name = "Form1";
+        Text = "Form1";
+        ResumeLayout(false);
     }
 
     #endregion
+
+    private PropertyGrid propertyGrid1;
 }
