@@ -179,6 +179,7 @@ public partial class MainForm : Form
         File.AppendAllLines(_fileName, [Text]);
     }
 
+    #if false
     private static Process? StartInspectIfNeeded()
     {
         // Windows kit version should match OS version this app runs on if debugging into inspect process.
@@ -207,4 +208,5 @@ public partial class MainForm : Form
 
         return Process.Start($"{toolName}.exe");
     }
+    #endif
 }
