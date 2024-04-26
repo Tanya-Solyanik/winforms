@@ -43,3 +43,5 @@ virtual System.Windows.Forms.DataObject.TryGetDataCore<T>(string! format, System
 System.Windows.Forms.DataObject.SetDataAsJson<T>(string! format, bool autoConvert, T data) -> void
 System.Windows.Forms.DataObject.SetDataAsJson<T>(string! format, T data) -> void
 System.Windows.Forms.DataObject.SetDataAsJson<T>(T data) -> void
+override System.Windows.Forms.Control.ControlAccessibleObject.GetChild(int index) -> System.Windows.Forms.AccessibleObject?
+override System.Windows.Forms.Control.ControlAccessibleObject.GetChildCount() -> int

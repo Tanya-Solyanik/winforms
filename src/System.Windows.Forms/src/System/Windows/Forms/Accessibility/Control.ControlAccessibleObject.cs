@@ -57,26 +57,86 @@ public partial class Control
         private protected override string AutomationId
             => this.TryGetOwnerAs(out Control? owner) ? owner.Name : string.Empty;
 
-        // If the control is used as an item of a ToolStrip via ToolStripControlHost,
-        // its accessible object should provide info about the owning ToolStrip and items-siblings
-        // to build a correct ToolStrip accessibility tree.
+        /// <devdoc>
+        ///  If the control is used as an item of a ToolStrip via ToolStripControlHost,
+        ///  its accessible object should provide info about the owning ToolStrip and items-siblings
+        ///  to build a correct ToolStrip accessibility tree.
+        /// </devdoc>
         internal override IRawElementProviderFragment.Interface? FragmentNavigate(NavigateDirection direction)
         {
-            if (!this.TryGetOwnerAs(out Control? owner) || owner.ToolStripControlHost is not ToolStripControlHost host)
+            if (!this.TryGetOwnerAs(out Control? owner))
             {
-                return base.FragmentNavigate(direction);
+                return null;
             }
 
-            return direction is NavigateDirection.NavigateDirection_Parent
-                or NavigateDirection.NavigateDirection_PreviousSibling
-                or NavigateDirection.NavigateDirection_NextSibling
-                ? host.AccessibilityObject.FragmentNavigate(direction)
-                : base.FragmentNavigate(direction);
+            if (owner.ToolStripControlHost is ToolStripControlHost host)
+            {
+                return direction is NavigateDirection.NavigateDirection_Parent
+                    or NavigateDirection.NavigateDirection_PreviousSibling
+                    or NavigateDirection.NavigateDirection_NextSibling
+                        ? host.AccessibilityObject.FragmentNavigate(direction)
+                        : base.FragmentNavigate(direction);
+            }
+
+            switch (direction)
+            {
+                case NavigateDirection.NavigateDirection_Parent:
+                    return owner.ParentInternal?.AccessibilityObject;
+                    // return Parent;
+
+                case NavigateDirection.NavigateDirection_FirstChild:
+                    if (owner.GetStyle(ControlStyles.ContainerControl))
+                    {
+                        int[] map = owner.GetChildWindowsInTabOrder();
+                        if (map.Length != 0)
+                        {
+                            return owner.Controls[map[0]].AccessibilityObject;
+                        }
+                    }
+
+                    break;
+                case NavigateDirection.NavigateDirection_LastChild:
+                    if (owner.GetStyle(ControlStyles.ContainerControl))
+                    {
+                        int[] map1 = owner.GetChildWindowsInTabOrder();
+                        if (map1.Length != 0)
+                        {
+                            return owner.Controls[map1[map1.Length]].AccessibilityObject;
+                        }
+                    }
+
+                    break;
+                case NavigateDirection.NavigateDirection_NextSibling:
+                    {
+                        var parent = owner.ParentInternal?.AccessibilityObject;
+                        if (parent is not ControlAccessibleObject parentObject)
+                        {
+                            return null;
+                        }
+
+                        // Let the system navigate via the parent?
+                        return parentObject.GetNextChild(owner);
+                    }
+
+                case NavigateDirection.NavigateDirection_PreviousSibling:
+                    {
+                        var parent = owner.ParentInternal?.AccessibilityObject;
+                        if (parent is not ControlAccessibleObject parentObject)
+                        {
+                            return null;
+                        }
+
+                        // Let the system navigate via the parent?
+                        return parentObject.GetPrevChild(owner);
+                    }
+            }
+
+            return base.FragmentNavigate(direction);
         }
 
         /// <summary>
         ///  For container controls only, return array of child controls sorted into
-        ///  tab index order. This gets applies to the list of child accessible objects
+        ///  tab index order. This gets applied to the list of child accessible objects
         ///  as returned by the system, so that we can present a meaningful order to
         ///  the user. The system defaults to z-order, which is bad for us because
         ///  that is usually the reverse of tab order!
@@ -85,6 +145,59 @@ public partial class Control
             => this.TryGetOwnerAs(out Control? owner) && owner.GetStyle(ControlStyles.ContainerControl)
                 ? owner.GetChildWindowsInTabOrder()
                 : base.GetSysChildOrder();
+
+        public override AccessibleObject? GetChild(int index)
+        {
+            if (this.TryGetOwnerAs(out Control? owner) && owner.GetStyle(ControlStyles.ContainerControl))
+            {
+                int[] map = owner.GetChildWindowsInTabOrder();
+                if (index >= 0 && index < map.Length)
+                {
+                    return owner.Controls[map[index]].AccessibilityObject;
+                }
+            }
+
+            return null;
+        }
+
+        internal AccessibleObject? GetNextChild(Control child)
+        {
+            if (this.TryGetOwnerAs(out Control? owner) && owner.GetStyle(ControlStyles.ContainerControl))
+            {
+                int[] map = owner.GetChildWindowsInTabOrder();
+                for (int index = 0; index < map.Length - 1; index++)
+                {
+                    if (owner.Controls[map[index]] == child)
+                    {
+                        return owner.Controls[map[index + 1]].AccessibilityObject;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        internal AccessibleObject? GetPrevChild(Control child)
+        {
+            if (this.TryGetOwnerAs(out Control? owner) && owner.GetStyle(ControlStyles.ContainerControl))
+            {
+                int[] map = owner.GetChildWindowsInTabOrder();
+                for (int index = 1; index < map.Length; index++)
+                {
+                    if (owner.Controls[map[index]] == child)
+                    {
+                        return owner.Controls[map[index - 1]].AccessibilityObject;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public override int GetChildCount() =>
+            this.TryGetOwnerAs(out Control? owner) && owner.GetStyle(ControlStyles.ContainerControl)
+                ? owner.Controls.Count
+                : base.GetChildCount();
 
         /// <summary>
         ///  Perform custom navigation between parent/child/sibling accessible objects,
