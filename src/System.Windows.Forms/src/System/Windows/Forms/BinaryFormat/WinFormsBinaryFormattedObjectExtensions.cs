@@ -59,4 +59,40 @@ internal static class WinFormsBinaryFormattedObjectExtensions
         format.TryGetFrameworkObject(out value)
         || format.TryGetBitmap(out value)
         || format.TryGetImageListStreamer(out value);
+
+    /// <summary>
+    ///  Try to get an object of <typeparamref name="T"/> type, if that type is supported by the binary format.
+    /// </summary>
+    public static bool TryGetObject<T>(this BinaryFormattedObject format, [NotNullWhen(true)] out T? value) where T : class
+    {
+        value = null;
+        if (Contains(format.RootRecord as ClassRecord))
+        {
+            value = format.Deserialize() as T;
+            return value is not null;
+        }
+
+        return false;
+
+        bool Contains(ClassRecord? record)
+        {
+            if (record is null)
+            {
+                return false;
+            }
+
+            string typeName = typeof(T).FullName!;
+            string assemblyName = typeof(T).Assembly.FullName!;
+
+            // This class is in System.Runtime.dll
+            if (assemblyName == typeof(object).Assembly.FullName)
+            {
+                return record.LibraryId.IsNull && record.Name == typeName;
+            }
+
+            return record.ClassInfo.Name == typeName
+                && format[record.LibraryId] is BinaryLibrary library
+                && library.LibraryName == assemblyName;
+        }
+    }
 }

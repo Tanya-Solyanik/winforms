@@ -1,0 +1,12 @@
+static System.Windows.Forms.Clipboard.GetData<T>(string! format) -> T?
+static System.Windows.Forms.Clipboard.GetData<T>() -> T?
+static System.Windows.Forms.Clipboard.SetDataObject<T>(T! data) -> void
+static System.Windows.Forms.Clipboard.SetDataObject<T>(T! data, bool copy) -> void
+static System.Windows.Forms.Clipboard.SetDataObject<T>(T! data, bool copy, int retryTimes, int retryDelay) -> void
+System.Windows.Forms.IDataObject.GetData<T>(string! format) -> T?
+virtual System.Windows.Forms.DataObject.GetData<T>(string! format) -> T?
+virtual System.Windows.Forms.DataObject.GetData<T>() -> T?
+System.Windows.Forms.IDataObject.GetData<T>() -> T?
+System.Windows.Forms.IDataObject.GetDataPresent<T>() -> bool
+System.Windows.Forms.IDataObject.SetData<T>(string! format, T! data) -> void
+System.Windows.Forms.IDataObject.SetData<T>(T! data) -> void

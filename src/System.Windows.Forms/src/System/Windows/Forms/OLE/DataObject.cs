@@ -99,6 +99,10 @@ public unsafe partial class DataObject :
 
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
 
+    public virtual T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format) where T : class => GetData(format) as T;
+
+    public virtual T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : class => GetData<T>(typeof(T).FullName!);
+
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
 
@@ -162,16 +166,16 @@ public unsafe partial class DataObject :
     public virtual void SetAudio(byte[] audioBytes) => SetAudio(new MemoryStream(audioBytes.OrThrowIfNull()));
 
     public virtual void SetAudio(Stream audioStream) =>
-        SetData(DataFormats.WaveAudioConstant, autoConvert: false, audioStream.OrThrowIfNull());
+        SetData<Stream>(DataFormats.WaveAudioConstant, audioStream.OrThrowIfNull());
 
     public virtual void SetFileDropList(StringCollection filePaths)
     {
         string[] strings = new string[filePaths.OrThrowIfNull().Count];
         filePaths.CopyTo(strings, 0);
-        SetData(DataFormats.FileDropConstant, true, strings);
+        SetData(DataFormats.FileDropConstant, true, strings as object); // tanyaso: can this really go through autoconvert?
     }
 
-    public virtual void SetImage(Image image) => SetData(DataFormats.BitmapConstant, true, image.OrThrowIfNull());
+    public virtual void SetImage(Image image) => SetData(DataFormats.BitmapConstant, true, (image as object).OrThrowIfNull());
 
     public virtual void SetText(string textData) => SetText(textData, TextDataFormat.UnicodeText);
 
@@ -182,7 +186,7 @@ public unsafe partial class DataObject :
         // Valid values are 0x0 to 0x4
         SourceGenerated.EnumValidator.Validate(format, nameof(format));
 
-        SetData(ConvertToDataFormats(format), false, textData);
+        SetData<string>(ConvertToDataFormats(format), textData);
     }
 
     private static string ConvertToDataFormats(TextDataFormat format) => format switch
@@ -245,7 +249,7 @@ public unsafe partial class DataObject :
         ((ComTypes.IDataObject)_innerData).QueryGetData(ref formatetc);
 
     void ComTypes.IDataObject.SetData(ref FORMATETC pFormatetcIn, ref STGMEDIUM pmedium, bool fRelease) =>
-        ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
+ ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
 
     #endregion
 
