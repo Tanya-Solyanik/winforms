@@ -12,7 +12,7 @@ public unsafe partial class DataObject
     internal unsafe partial class ComposedDataObject
     {
         /// <summary>
-        ///  Maps <see cref="ComTypes.IDataObject"/> to <see cref="Com.IDataObject.Interface"/>.
+        ///  Maps the runtime <see cref="ComTypes.IDataObject"/> to the native <see cref="Com.IDataObject.Interface"/>.
         /// </summary>
         private class RuntimeDataObjectToNativeAdapter : Com.IDataObject.Interface, ComTypes.IDataObject, Com.IManagedWrapper<Com.IDataObject>
         {
@@ -29,84 +29,6 @@ public unsafe partial class DataObject
             void ComTypes.IDataObject.GetDataHere(ref FORMATETC format, ref STGMEDIUM medium) => _runtimeDataObject.GetDataHere(ref format, ref medium);
             int ComTypes.IDataObject.QueryGetData(ref FORMATETC format) => _runtimeDataObject.QueryGetData(ref format);
             void ComTypes.IDataObject.SetData(ref FORMATETC formatIn, ref STGMEDIUM medium, bool release) => _runtimeDataObject.SetData(ref formatIn, ref medium, release);
-
-            HRESULT Com.IDataObject.Interface.GetData(Com.FORMATETC* pformatetcIn, Com.STGMEDIUM* pmedium)
-            {
-                if (pmedium is null)
-                {
-                    return HRESULT.E_POINTER;
-                }
-
-                try
-                {
-                    ((ComTypes.IDataObject)this).GetData(ref *(FORMATETC*)pformatetcIn, out STGMEDIUM medium);
-                    *pmedium = (Com.STGMEDIUM)medium;
-                    return HRESULT.S_OK;
-                }
-                catch (Exception e)
-                {
-                    return (HRESULT)e.HResult;
-                }
-            }
-
-            HRESULT Com.IDataObject.Interface.GetDataHere(Com.FORMATETC* pformatetc, Com.STGMEDIUM* pmedium)
-            {
-                if (pmedium is null)
-                {
-                    return HRESULT.E_POINTER;
-                }
-
-                STGMEDIUM medium = (STGMEDIUM)(*pmedium);
-                try
-                {
-                    ((ComTypes.IDataObject)this).GetDataHere(ref *(FORMATETC*)pformatetc, ref medium);
-                }
-                catch (Exception e)
-                {
-                    return (HRESULT)e.HResult;
-                }
-
-                *pmedium = (Com.STGMEDIUM)medium;
-                return HRESULT.S_OK;
-            }
-
-            HRESULT Com.IDataObject.Interface.QueryGetData(Com.FORMATETC* pformatetc)
-                => (HRESULT)((ComTypes.IDataObject)this).QueryGetData(ref *(FORMATETC*)pformatetc);
-
-            HRESULT Com.IDataObject.Interface.GetCanonicalFormatEtc(Com.FORMATETC* pformatectIn, Com.FORMATETC* pformatetcOut)
-                => (HRESULT)((ComTypes.IDataObject)this).GetCanonicalFormatEtc(ref *(FORMATETC*)pformatectIn, out *(FORMATETC*)pformatetcOut);
-
-            HRESULT Com.IDataObject.Interface.SetData(Com.FORMATETC* pformatetc, Com.STGMEDIUM* pmedium, BOOL fRelease)
-            {
-                if (pmedium is null)
-                {
-                    return HRESULT.E_POINTER;
-                }
-
-                STGMEDIUM medium = (STGMEDIUM)(*pmedium);
-                try
-                {
-                    ((ComTypes.IDataObject)this).SetData(ref *(FORMATETC*)pformatetc, ref medium, fRelease);
-                }
-                catch (Exception e)
-                {
-                    return (HRESULT)e.HResult;
-                }
-
-                return HRESULT.S_OK;
-            }
-
-            HRESULT Com.IDataObject.Interface.EnumFormatEtc(uint dwDirection, Com.IEnumFORMATETC** ppenumFormatEtc)
-            {
-                if (ppenumFormatEtc is null)
-                {
-                    return HRESULT.E_POINTER;
-                }
-
-                var comTypeFormatEtc = ((ComTypes.IDataObject)this).EnumFormatEtc((DATADIR)(int)dwDirection);
-                *ppenumFormatEtc = ComHelpers.TryGetComPointer<Com.IEnumFORMATETC>(comTypeFormatEtc, out HRESULT hr);
-                return hr.Succeeded ? HRESULT.S_OK : HRESULT.E_NOINTERFACE;
-            }
 
             HRESULT Com.IDataObject.Interface.DAdvise(Com.FORMATETC* pformatetc, uint advf, Com.IAdviseSink* pAdvSink, uint* pdwConnection)
             {
@@ -145,6 +67,84 @@ public unsafe partial class DataObject
 
                 *ppenumAdvise = ComHelpers.TryGetComPointer<Com.IEnumSTATDATA>(enumAdvice, out hr);
                 return hr.Succeeded ? hr : HRESULT.E_NOINTERFACE;
+            }
+
+            HRESULT Com.IDataObject.Interface.EnumFormatEtc(uint dwDirection, Com.IEnumFORMATETC** ppenumFormatEtc)
+            {
+                if (ppenumFormatEtc is null)
+                {
+                    return HRESULT.E_POINTER;
+                }
+
+                var comTypeFormatEtc = ((ComTypes.IDataObject)this).EnumFormatEtc((DATADIR)(int)dwDirection);
+                *ppenumFormatEtc = ComHelpers.TryGetComPointer<Com.IEnumFORMATETC>(comTypeFormatEtc, out HRESULT hr);
+                return hr.Succeeded ? HRESULT.S_OK : HRESULT.E_NOINTERFACE;
+            }
+
+            HRESULT Com.IDataObject.Interface.GetCanonicalFormatEtc(Com.FORMATETC* pformatectIn, Com.FORMATETC* pformatetcOut) =>
+                (HRESULT)((ComTypes.IDataObject)this).GetCanonicalFormatEtc(ref *(FORMATETC*)pformatectIn, out *(FORMATETC*)pformatetcOut);
+
+            HRESULT Com.IDataObject.Interface.GetData(Com.FORMATETC* pformatetcIn, Com.STGMEDIUM* pmedium)
+            {
+                if (pmedium is null)
+                {
+                    return HRESULT.E_POINTER;
+                }
+
+                try
+                {
+                    ((ComTypes.IDataObject)this).GetData(ref *(FORMATETC*)pformatetcIn, out STGMEDIUM medium);
+                    *pmedium = (Com.STGMEDIUM)medium;
+                    return HRESULT.S_OK;
+                } 
+                catch (Exception e)
+                {
+                    return (HRESULT)e.HResult;
+                }
+            }
+
+            HRESULT Com.IDataObject.Interface.GetDataHere(Com.FORMATETC* pformatetc, Com.STGMEDIUM* pmedium)
+            {
+                if (pmedium is null)
+                {
+                    return HRESULT.E_POINTER;
+                }
+
+                STGMEDIUM medium = (STGMEDIUM)(*pmedium);
+                try
+                {
+                    ((ComTypes.IDataObject)this).GetDataHere(ref *(FORMATETC*)pformatetc, ref medium);
+                }
+                catch (Exception e)
+                {
+                    return (HRESULT)e.HResult;
+                }
+
+                *pmedium = (Com.STGMEDIUM)medium;
+                return HRESULT.S_OK;
+            }
+
+            HRESULT Com.IDataObject.Interface.QueryGetData(Com.FORMATETC* pformatetc) =>
+                (HRESULT)((ComTypes.IDataObject)this).QueryGetData(ref *(FORMATETC*)pformatetc);
+
+            HRESULT Com.IDataObject.Interface.SetData(Com.FORMATETC* pformatetc, Com.STGMEDIUM* pmedium, BOOL fRelease)
+            {
+                if (pmedium is null)
+                {
+                    return HRESULT.E_POINTER;
+                }
+
+                STGMEDIUM medium = (STGMEDIUM)(*pmedium);
+                try
+                {
+                    ((ComTypes.IDataObject)this).SetData(ref *(FORMATETC*)pformatetc, ref medium, fRelease);
+                }
+                catch (Exception e)
+                {
+                    return (HRESULT)e.HResult;
+                }
+
+                return HRESULT.S_OK;
             }
         }
     }
