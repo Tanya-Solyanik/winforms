@@ -99,15 +99,22 @@ public unsafe partial class DataObject
         object? IDataObject.GetData(string format, bool autoConvert) => _winFormsDataObject.GetData(format, autoConvert);
         object? IDataObject.GetData(string format) => _winFormsDataObject.GetData(format);
         object? IDataObject.GetData(Type format) => _winFormsDataObject.GetData(format);
+        T? IDataObject.GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]T>(string format, bool autoConvert) where T : class => _winFormsDataObject.GetData<T>(format, autoConvert);
+        T? IDataObject.GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]T>(string format) where T : class => _winFormsDataObject.GetData<T>(format);
+        T? IDataObject.GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]T>() where T : class => _winFormsDataObject.GetData<T>();
         bool IDataObject.GetDataPresent(string format, bool autoConvert) => _winFormsDataObject.GetDataPresent(format, autoConvert);
         bool IDataObject.GetDataPresent(string format) => _winFormsDataObject.GetDataPresent(format);
         bool IDataObject.GetDataPresent(Type format) => _winFormsDataObject.GetDataPresent(format);
+        bool IDataObject.GetDataPresent<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]T>() => _winFormsDataObject.GetDataPresent<T>();
         string[] IDataObject.GetFormats(bool autoConvert) => _winFormsDataObject.GetFormats(autoConvert);
         string[] IDataObject.GetFormats() => _winFormsDataObject.GetFormats();
         void IDataObject.SetData(string format, bool autoConvert, object? data) => _winFormsDataObject.SetData(format, autoConvert, data);
         void IDataObject.SetData(string format, object? data) => _winFormsDataObject.SetData(format, data);
         void IDataObject.SetData(Type format, object? data) => _winFormsDataObject.SetData(format, data);
         void IDataObject.SetData(object? data) => _winFormsDataObject.SetData(data);
+        void IDataObject.SetData<T>(string format, bool autoConvert, T data) where T : class => _winFormsDataObject.SetData<T>(format, autoConvert, data);
+        void IDataObject.SetData<T>(string format, T data) where T : class => _winFormsDataObject.SetData<T>(format, data);
+        void IDataObject.SetData<T>(T data) where T : class => _winFormsDataObject.SetData<T>(data);
         #endregion
 
         #region Com.IDataObject.Interface

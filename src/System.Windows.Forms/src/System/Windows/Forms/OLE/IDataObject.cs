@@ -25,22 +25,22 @@ public interface IDataObject
     object? GetData(Type format);
 
     /// <summary>
-    ///  Stores the specified data and its associated format in  this instance,
-    ///  using autoConvert to specify whether the data can be converted to
-    ///  another format.
+    ///  Retrieves the data associated with the specified data format, using
+    ///  autoConvert to determine whether to convert the data to the format
+    ///  if that data is of type <typeparamref name="T"/>.
     /// </summary>
-    void SetData(string format, bool autoConvert, object? data);
+    T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert) where T : class =>
+        GetData(format, autoConvert) as T;
 
     /// <summary>
-    ///  Stores the specified data and its associated format in this instance.
+    ///  Retrieves the data associated with the specified data format if that data is of type <typeparamref name="T"/>.
     /// </summary>
-    void SetData(string format, object? data);
+    T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format) where T : class => GetData<T>(format, autoConvert: true);
 
     /// <summary>
-    ///  Stores the specified data and its associated class type in this
-    ///  instance.
+    ///  Retrieves the data associated with the specified class type format if that data is of type <typeparamref name="T"/>.
     /// </summary>
-    void SetData(Type format, object? data);
+    T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : class => GetData<T>(typeof(T).FullName!);
 
     /// <summary>
     ///  Determines whether data stored in this instance is  associated with the
@@ -60,6 +60,12 @@ public interface IDataObject
     ///  can be converted to, the specified format.
     /// </summary>
     bool GetDataPresent(Type format);
+
+    /// <summary>
+    ///  Determines whether data stored in this instance is associated with, or
+    ///  can be converted to format <typeparamref name="T" />.
+    /// </summary>
+    bool GetDataPresent<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : class => GetDataPresent(typeof(T));
 
     /// <summary>
     ///  Gets a list of all formats that data stored in this instance is
@@ -97,4 +103,19 @@ public interface IDataObject
     ///  data for the format.
     /// </summary>
     void SetData(object? data);
+
+    /// <inheritdoc cref="SetData(string, bool, object?)" />
+    void SetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert, T data) where T : class =>
+        SetData(format, autoConvert, data as object);
+
+    /// <summary>
+    ///  Stores the specified data and its associated format in this instance,
+    ///  if <paramref name="format"/> supports <typeparamref name="T"/>.
+    /// </summary>
+    void SetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, T data) where T : class =>
+        SetData<T>(format, autoConvert: true, data);
+
+    /// <inheritdoc cref="SetData(Type, object?)"/>
+    void SetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(T data) where T : class =>
+        SetData<T>(typeof(T).FullName!, data);
 }

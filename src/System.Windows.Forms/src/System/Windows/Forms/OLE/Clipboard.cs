@@ -15,6 +15,30 @@ namespace System.Windows.Forms;
 public static class Clipboard
 {
     /// <summary>
+    ///  Places nonpersistent data of type <typeparamref name="T"/> on the system clipboard.
+    /// </summary>
+    /// <param name="data">The data of type T to place on the clipboard.</param>
+    /// <typeparam name="T">The type of the data to place on the clipboard.</typeparam>
+    public static void SetDataObject<T>(T data) where T : notnull => SetDataObject<T>(data, copy: false);
+
+    /// <summary>
+    ///  Places data of type <typeparamref name="T"/> on the system clipboard.
+    /// </summary>
+    /// <param name="data">The data of type <typeparamref name="T"/> to place on the clipboard.</param>
+    /// <param name="copy">A boolean value that specifies whether the data should
+    ///  remain on the clipboard after the application exits.</param>
+    /// <typeparam name="T">The type of the data to place on the clipboard.</typeparam>
+    public static void SetDataObject<T>(T data, bool copy) where T : notnull =>
+        SetDataObject<T>(data, copy, retryTimes: 10, retryDelay: 100);
+
+    /// <summary>
+    ///  Places data of type <typeparamref name="T"/> on the system clipboard, with options to keep
+    ///  the data after application exits and to retry the operation.
+    /// </summary>
+    public static unsafe void SetDataObject<T>(T data, bool copy, int retryTimes, int retryDelay) where T : notnull =>
+        SetDataObject(data as object, copy, retryTimes, retryDelay);
+
+    /// <summary>
     ///  Places nonpersistent data on the system <see cref="Clipboard"/>.
     /// </summary>
     public static void SetDataObject(object data) => SetDataObject(data, copy: false);
@@ -212,11 +236,14 @@ public static class Clipboard
     /// <summary>
     ///  Retrieves data from the <see cref="Clipboard"/> in the specified format if that data is of type <typeparamref name="T"/>.
     /// </summary>
-    public static object? GetData(string format)
-        => string.IsNullOrWhiteSpace(format) ? null : GetData(format, autoConvert: false);
+    public static T? GetData<T>(string format) where T : class =>
+        string.IsNullOrWhiteSpace(format) ? null : GetData<T>(format, autoConvert: false);
 
-    private static object? GetData(string format, bool autoConvert)
-        => GetDataObject() is { } dataObject ? dataObject.GetData(format, autoConvert) : null;
+    private static T? GetData<T>(string format, bool autoConvert) where T : class
+    {
+        // For known formats, we can validate type for compatibility.
+        return GetDataObject() is DataObject dataObject ? dataObject.GetData<T>(format, autoConvert) : null;
+    }
 
     /// <summary>
     ///  Retrieves a collection of file names from the <see cref="Clipboard"/>.

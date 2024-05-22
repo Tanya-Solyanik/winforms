@@ -15,7 +15,7 @@ namespace System.Windows.Forms;
 /// </summary>
 [ClassInterface(ClassInterfaceType.None)]
 public unsafe partial class DataObject :
-    IDataObject,
+    IDataObject,  // Going with a default implementation for set and getdatapresent
     Com.IDataObject.Interface,
     ComTypes.IDataObject,
     Com.IManagedWrapper<Com.IDataObject>
