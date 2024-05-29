@@ -210,6 +210,23 @@ public static class Clipboard
         GetDataObject() is { } dataObject ? dataObject.GetData(format, autoConvert) : null;
 
     /// <summary>
+    ///  Retrieves data from the <see cref="Clipboard"/> in the typeof(T) format if that data is of type <typeparamref name="T"/>.
+    /// </summary>
+    public static T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : class
+    {
+        return GetDataObject() is DataObject dataObject ? dataObject.GetData<T>() : null;
+    }
+
+    /// <summary>
+    ///  Retrieves data from the <see cref="Clipboard"/> in the specified format if that data is of type <typeparamref name="T"/>.
+    /// </summary>
+    public static T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format) where T : class
+    {
+        // For known formats, we can validate type for compatibility.
+        return GetDataObject() is DataObject dataObject ? dataObject.GetData<T>(format) : null;
+    }
+
+    /// <summary>
     ///  Retrieves a collection of file names from the <see cref="Clipboard"/>.
     /// </summary>
     public static StringCollection GetFileDropList()

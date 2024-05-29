@@ -25,6 +25,28 @@ public interface IDataObject
     object? GetData(Type format);
 
     /// <summary>
+    ///  Retrieves the data associated with the specified data format if that data is of type <typeparamref name="T"/>.
+    /// </summary>
+    T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format) where T : class => GetData(format) as T;
+
+    /// <summary>
+    ///  Retrieves the data associated with the specified class type format if that data is of type <typeparamref name="T"/>.
+    /// </summary>
+    T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : class => GetData<T>(typeof(T).FullName!);
+
+    // bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>([NotNullWhen(true)] T data) where T : class
+    // {
+    //    data = null!;
+    //    var result = GetData<T>();
+    //    if (result is not null)
+    //    {
+    //        data = result;
+    //        return true;
+    //    }
+    //    return false;
+    // }
+
+    /// <summary>
     ///  Determines whether data stored in this instance is  associated with the
     ///  specified format, using autoConvert to determine whether to convert the
     ///  data to the format.

@@ -99,6 +99,10 @@ public unsafe partial class DataObject
         object? IDataObject.GetData(string format, bool autoConvert) => _winFormsDataObject.GetData(format, autoConvert);
         object? IDataObject.GetData(string format) => _winFormsDataObject.GetData(format);
         object? IDataObject.GetData(Type format) => _winFormsDataObject.GetData(format);
+        T? IDataObject.GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format) where T : class =>
+            _winFormsDataObject.GetData<T>(format);
+        T? IDataObject.GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : class =>
+            _winFormsDataObject.GetData<T>();
         bool IDataObject.GetDataPresent(string format, bool autoConvert) => _winFormsDataObject.GetDataPresent(format, autoConvert);
         bool IDataObject.GetDataPresent(string format) => _winFormsDataObject.GetDataPresent(format);
         bool IDataObject.GetDataPresent(Type format) => _winFormsDataObject.GetDataPresent(format);

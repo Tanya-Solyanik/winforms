@@ -99,6 +99,11 @@ public unsafe partial class DataObject :
 
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
 
+    public virtual T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format) where T : class
+        => ((IDataObject)_innerData).GetData<T>(format);
+
+    public virtual T? GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() where T : class => GetData<T>(typeof(T).FullName!);
+
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
 
@@ -245,7 +250,7 @@ public unsafe partial class DataObject :
         ((ComTypes.IDataObject)_innerData).QueryGetData(ref formatetc);
 
     void ComTypes.IDataObject.SetData(ref FORMATETC pFormatetcIn, ref STGMEDIUM pmedium, bool fRelease) =>
-        ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
+ ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
 
     #endregion
 

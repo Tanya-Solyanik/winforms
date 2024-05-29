@@ -1,0 +1,6 @@
+static System.Windows.Forms.Clipboard.GetData<T>(string! format) -> T?
+static System.Windows.Forms.Clipboard.GetData<T>() -> T?
+System.Windows.Forms.IDataObject.GetData<T>(string! format) -> T?
+virtual System.Windows.Forms.DataObject.GetData<T>(string! format) -> T?
+virtual System.Windows.Forms.DataObject.GetData<T>() -> T?
+System.Windows.Forms.IDataObject.GetData<T>() -> T?
