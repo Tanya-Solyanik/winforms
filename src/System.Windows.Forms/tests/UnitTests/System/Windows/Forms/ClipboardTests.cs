@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
@@ -313,7 +314,7 @@ public partial class ClipboardTests
     [WinFormsTheory]
     [MemberData(nameof(Clipboard_SetDataObject_Null_TheoryData))]
     public void Clipboard_SetDataObject_NullData_ThrowsArgumentNullException(Action action)
-    { 
+    {
         action.Should().Throw<ArgumentNullException>().WithParameterName("data");
     }
 
@@ -545,6 +546,173 @@ public partial class ClipboardTests
         clipboardDataObject.Should().BeSameAs(realDataObject);
         clipboardDataObject!.GetDataPresent("Foo").Should().BeTrue();
         clipboardDataObject.GetData("Foo").Should().Be("Bar");
+    }
+
+    [WinFormsFact]
+    public void Clipboard_Set_TryGetOfTestData_NoFormat_ReturnsExpected()
+    {
+        using BinaryFormatterScope scope = new(enable: true);
+        TestData expected = new("thing1", "thing2");
+        Clipboard.SetData(expected);
+
+        Clipboard.TryGetData(out TestData? data).Should().BeTrue();
+        data.Should().BeEquivalentTo(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_Set_TryGetOfTestData_NoFormat_Fails()
+    {
+        using BinaryFormatterScope scope = new(enable: false);
+        TestData expected = new("thing1", "thing2");
+        Clipboard.SetData(expected);
+
+        Clipboard.TryGetData(out TestData? data).Should().BeFalse();
+    }
+
+    [WinFormsFact]
+    public void Clipboard_Set_TryGetOfTestData1_NoFormat_ReturnsExpected()
+    {
+        using BinaryFormatterScope scope = new(enable: true);
+        TestData1 expected = new(new PointF(1.1F, 1.2F));
+        Clipboard.SetData(expected);
+
+        Clipboard.TryGetData(out TestData1? data).Should().BeTrue();
+        data.Should().BeEquivalentTo(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_Set_TryGetOfTestData2_NoFormat_ReturnsExpected()
+    {
+        using BinaryFormatterScope scope = new(enable: true);
+        TestData2 expected = new(new ImageListStreamer(new ImageList()));
+        Clipboard.SetData(expected);
+
+        Clipboard.TryGetData(out TestData2? data).Should().BeTrue();
+        data.Should().BeEquivalentTo(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_Set_TryGetOfTestData3_NoFormat_ReturnsExpected()
+    {
+        using BinaryFormatterScope scope = new(enable: true);
+        using Bitmap bitmap = new(10, 10);
+        TestData3 expected = new(bitmap);
+        Clipboard.SetData(expected);
+
+        // TanyaSo - can't get the nested class???? 
+        Clipboard.TryGetData(out TestData3? data).Should().BeTrue();
+
+        data.Should().Be(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_Set_TryGetOfTestData4_NoFormat_ReturnsExpected()
+    {
+        using BinaryFormatterScope scope = new(enable: true);
+        TestData4 expected = new();
+        Clipboard.SetData(expected);
+
+        Clipboard.TryGetData(out TestData4? data).Should().BeTrue();
+
+        data.Should().Be(expected);
+    }
+
+    [Serializable]
+    private class TestData
+    {
+        public TestData(string text1, string text2)
+        {
+            _text1 = text1;
+            _text2 = text2;
+        }
+
+        public string _text1;
+        public string _text2;
+    }
+
+    [Serializable]
+    private class TestData1 : IEquatable<TestData1>
+    {
+        public TestData1(PointF point)
+        {
+            _point = point;
+        }
+
+        public PointF _point;
+
+        public bool Equals(TestData1? other) => other is not null && _point == other._point;
+        public override bool Equals(object? obj) => obj is TestData1 other && Equals(other);
+        public override int GetHashCode() => _point.GetHashCode();
+    }
+
+    [Serializable]
+    private class TestData2
+    {
+        public TestData2(ImageListStreamer streamer)
+        {
+            _streamer = streamer;
+        }
+
+        public ImageListStreamer _streamer;
+    }
+
+    [Serializable]
+    private class TestData3
+    {
+        private static int s_counter;
+
+        public TestData3(Bitmap bitmap)
+        {
+            _bitmap = bitmap;
+            _innerData = new((++s_counter).ToString());
+        }
+
+        public Bitmap _bitmap;
+        private readonly InnerData _innerData;
+
+        // This is called by the fluid assertion.
+        public override bool Equals(object? obj) =>
+            obj is TestData3 other && _bitmap.Size == other._bitmap.Size && _innerData._text == other._innerData._text;
+        public override int GetHashCode() => HashCode.Combine(_bitmap, _innerData);
+
+        private class InnerData
+        {
+            public InnerData(string text)
+            {
+                _text = text;
+            }
+
+            public string _text;
+        }
+    }
+
+    [Serializable]
+    private class TestData4 : ISerializable
+    {
+        private readonly int _number;
+        private static int s_counter;
+
+        public TestData4()
+        {
+            _number = ++s_counter;
+        }
+
+       // This method is called by the fluid assertion.
+       public override bool Equals(object? obj) => obj is TestData4 other && _number == other._number;
+        public override int GetHashCode() => _number;
+
+        protected TestData4(SerializationInfo info, StreamingContext context)
+        {
+            _number = (info.GetValue(nameof(_number), typeof(int)) is object)
+                ? (int)info.GetValue(nameof(_number), typeof(int))!
+                : -1;
+        }
+
+        // SerializationConstructor
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue(nameof(_number), _number);
+        }
     }
 
     private class CustomDataObject : IDataObject, ComTypes.IDataObject
