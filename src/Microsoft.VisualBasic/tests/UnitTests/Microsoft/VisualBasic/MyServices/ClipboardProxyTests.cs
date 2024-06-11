@@ -84,7 +84,7 @@ public class ClipboardProxyTests
     {
         var clipboard = (new Computer()).Clipboard;
         string data = GetUniqueText();
-        clipboard.SetData(data);
+        clipboard.SetDataAsJson(data);
 
         clipboard.TryGetData(out string? result).Should().BeTrue();
         result.Should().Be(data);
@@ -94,7 +94,7 @@ public class ClipboardProxyTests
     public void DataOfT_BinaryFormatterDisabled_Fail()
     {
         var clipboard = (new Computer()).Clipboard;
-        clipboard.SetData(new Button());
+        clipboard.SetDataAsJson(new Button());
 
         clipboard.TryGetData(out Button? result).Should().BeFalse();
     }
@@ -106,7 +106,7 @@ public class ClipboardProxyTests
         using BinaryFormatterScope scope = new(enable: true);
         var clipboard = (new Computer()).Clipboard;
         TestData data = new("thing1", "thing2");
-        clipboard.SetData(data);
+        clipboard.SetDataAsJson(data);
 
         clipboard.TryGetData(out TestData? result).Should().BeTrue();
         result.Should().Be(data);

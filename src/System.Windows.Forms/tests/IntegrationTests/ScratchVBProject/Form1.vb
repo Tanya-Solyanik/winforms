@@ -93,7 +93,7 @@ Partial Public Class Form1
 
     Private Sub ClipboardTryGetDataOfTestDataByTypeName()
         Dim MyData As TestData = Nothing
-        If Clipboard.TryGetData(Of TestData)(MyData, GetType(TestData).FullName) Then
+        If Clipboard.TryGetData(Of TestData)(GetType(TestData).FullName, MyData) Then
             Text = $"{MyData._text1} {MyData._text2}"
         Else
             Text = "Could not retrieve data off the clipboard."
@@ -123,7 +123,7 @@ Partial Public Class Form1
     ' Writes
     Private Sub ClipboardSetDataTestData()
         Dim data As New TestData("Hello", "World")
-        Clipboard.SetData(data) ' this helper method avoids specifying the format
+        Clipboard.SetData("TestData", data) ' this helper method avoids specifying the format
         Text = $"format {GetType(TestData).FullName}"
     End Sub
 

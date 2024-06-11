@@ -549,24 +549,25 @@ public partial class ClipboardTests
     }
 
     [WinFormsFact]
-    public void Clipboard_Set_TryGetOfTestData_NoFormat_ReturnsExpected()
+    public void Clipboard_TryGetOfTestData_DefaultFormat_ReturnsExpected()
     {
         using BinaryFormatterScope scope = new(enable: true);
         TestData expected = new("thing1", "thing2");
-        Clipboard.SetData(expected);
+        Clipboard.SetData("TestData", expected);
 
-        Clipboard.TryGetData(out TestData? data).Should().BeTrue();
+        bool result = Clipboard.TryGetData(out TestData? data);
+        result.Should().BeTrue();
         data.Should().BeEquivalentTo(expected);
     }
 
     [WinFormsFact]
-    public void Clipboard_Set_TryGetOfTestData_NoFormat_Fails()
+    public void Clipboard_TryGetOfTestData_DefaultFormat_Fails()
     {
         using BinaryFormatterScope scope = new(enable: false);
         TestData expected = new("thing1", "thing2");
-        Clipboard.SetData(expected);
+        Clipboard.SetData("TestData", expected);
 
-        Clipboard.TryGetData(out TestData? data).Should().BeFalse();
+        Clipboard.TryGetData("TestData", out TestData? data).Should().BeFalse();
     }
 
     [WinFormsFact]
@@ -574,9 +575,9 @@ public partial class ClipboardTests
     {
         using BinaryFormatterScope scope = new(enable: true);
         TestData1 expected = new(new PointF(1.1F, 1.2F));
-        Clipboard.SetData(expected);
+        Clipboard.SetData("TestData", expected);
 
-        Clipboard.TryGetData(out TestData1? data).Should().BeTrue();
+        Clipboard.TryGetData("TestData", out TestData1? data).Should().BeTrue();
         data.Should().BeEquivalentTo(expected);
     }
 
@@ -585,9 +586,9 @@ public partial class ClipboardTests
     {
         using BinaryFormatterScope scope = new(enable: true);
         TestData2 expected = new(new ImageListStreamer(new ImageList()));
-        Clipboard.SetData(expected);
+        Clipboard.SetData("TestData", expected);
 
-        Clipboard.TryGetData(out TestData2? data).Should().BeTrue();
+        Clipboard.TryGetData("TestData", out TestData2? data).Should().BeTrue();
         data.Should().BeEquivalentTo(expected);
     }
 
@@ -597,10 +598,10 @@ public partial class ClipboardTests
         using BinaryFormatterScope scope = new(enable: true);
         using Bitmap bitmap = new(10, 10);
         TestData3 expected = new(bitmap);
-        Clipboard.SetData(expected);
+        Clipboard.SetData("TestData", expected);
 
         // TanyaSo - can't get the nested class???? 
-        Clipboard.TryGetData(out TestData3? data).Should().BeTrue();
+        Clipboard.TryGetData("TestData", out TestData3? data).Should().BeTrue();
 
         data.Should().Be(expected);
     }
@@ -610,7 +611,7 @@ public partial class ClipboardTests
     {
         using BinaryFormatterScope scope = new(enable: true);
         TestData4 expected = new();
-        Clipboard.SetData(expected);
+        Clipboard.SetData("TestData", expected);
 
         Clipboard.TryGetData(out TestData4? data).Should().BeTrue();
 
