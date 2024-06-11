@@ -103,7 +103,7 @@ public partial class Form1 : Form
 
     private void ClipboardTryGetDataOfTestDataByTypeName()
     {
-        if (Clipboard.TryGetData<TestData>(out var data, typeof(TestData).FullName!))
+        if (Clipboard.TryGetData<TestData>(typeof(TestData).FullName!, out var data))
         {
             Text = $"{data._text1} {data._text2}";
         }
@@ -147,7 +147,7 @@ public partial class Form1 : Form
     {
         var data = new TestData("Hello", "World");
         // Clipboard.SetData(typeof(TestData).FullName!, new TestData("Hello", "World"));
-        Clipboard.SetData(data); // this helper method avoids specifying the format
+        Clipboard.SetDataAsJson(data); // this helper method avoids specifying the format
         Text = $"format {typeof(TestData).FullName!}";
     }
 
