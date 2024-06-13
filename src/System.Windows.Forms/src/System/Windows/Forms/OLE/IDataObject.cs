@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Serialization;
+
 namespace System.Windows.Forms;
 
 /// <summary>
@@ -23,6 +25,38 @@ public interface IDataObject
     ///  Retrieves the data associated with the specified class type format.
     /// </summary>
     object? GetData(Type format);
+
+    /// <summary>
+    ///  Retrieves the data associated with the specified data format, using
+    ///  <paramref name="autoConvert"/> to determine whether to convert the data to the  format,
+    ///  if that data is assignable to <typeparamref name="T"/>.
+    ///  Will use <paramref name="binder"/> with the binary formatter if needed.
+    /// </summary>
+    bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, SerializationBinder binder, bool autoConvert, [NotNullWhen(true)] out T? data) where T : class
+    {
+        data = GetData(format, autoConvert) as T;
+        return data is object;
+    }
+
+    /// <summary>
+    ///  Retrieves the data associated with the specified data format, using
+    ///  <paramref name="autoConvert"/> to determine whether to convert the data to the  format,
+    ///  if that data is of type <typeparamref name="T"/>.
+    /// </summary>
+    bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert, [NotNullWhen(true)] out T? data) where T : class
+        => TryGetData(format, binder: Clipboard.s_safeBinder, autoConvert, out data);
+
+    /// <summary>
+    ///  Retrieves the data associated with the specified data format if that data is of type <typeparamref name="T"/>.
+    /// </summary>
+    bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, [NotNullWhen(true)] out T? data) where T : class
+        => TryGetData(format, autoConvert : false, out data);
+
+    /// <summary>
+    ///  Retrieves the data associated with data format named after <typeparamref name="T"/>, if that data is of type <typeparamref name="T"/>.
+    /// </summary>
+    bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>([NotNullWhen(true)] out T? data) where T : class
+        => TryGetData(typeof(T).FullName!, out data);
 
     /// <summary>
     ///  Determines whether data stored in this instance is  associated with the

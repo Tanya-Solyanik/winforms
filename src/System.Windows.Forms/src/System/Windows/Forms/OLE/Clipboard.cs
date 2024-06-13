@@ -3,9 +3,12 @@
 
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using Windows.Win32.System.Com;
 using Com = Windows.Win32.System.Com;
+using Switches = System.Windows.Forms.Primitives.LocalAppContextSwitches;
 
 namespace System.Windows.Forms;
 
@@ -22,8 +25,8 @@ public static class Clipboard
     /// <summary>
     ///  Overload that uses default values for retryTimes and retryDelay.
     /// </summary>
-    public static void SetDataObject(object data, bool copy) =>
-        SetDataObject(data, copy, retryTimes: 10, retryDelay: 100);
+    public static void SetDataObject(object data, bool copy)
+        => SetDataObject(data, copy, retryTimes: 10, retryDelay: 100);
 
     /// <summary>
     ///  Places data on the system <see cref="Clipboard"/> and uses copy to specify whether the data
@@ -162,11 +165,11 @@ public static class Clipboard
     ///  Indicates whether there is data on the Clipboard that is in the specified format
     ///  or can be converted to that format.
     /// </summary>
-    public static bool ContainsData(string? format) =>
-        !string.IsNullOrWhiteSpace(format) && ContainsData(format, autoConvert: false);
+    public static bool ContainsData(string? format)
+        => !string.IsNullOrWhiteSpace(format) && ContainsData(format, autoConvert: false);
 
-    private static bool ContainsData(string format, bool autoConvert) =>
-        GetDataObject() is { } dataObject && dataObject.GetDataPresent(format, autoConvert: autoConvert);
+    private static bool ContainsData(string format, bool autoConvert)
+        => GetDataObject() is { } dataObject && dataObject.GetDataPresent(format, autoConvert: autoConvert);
 
     /// <summary>
     ///  Indicates whether there is data on the Clipboard that is in the <see cref="DataFormats.FileDrop"/> format
@@ -202,12 +205,43 @@ public static class Clipboard
 
     /// <summary>
     ///  Retrieves data from the <see cref="Clipboard"/> in the specified format.
+    ///  This API is compatible with the previous versions of the framework.
     /// </summary>
-    public static object? GetData(string format) =>
-        string.IsNullOrWhiteSpace(format) ? null : GetData(format, autoConvert: false);
+    public static object? GetData(string format)
+        => string.IsNullOrWhiteSpace(format) ? null : GetData(format, autoConvert: false);
 
-    private static object? GetData(string format, bool autoConvert) =>
-        GetDataObject() is { } dataObject ? dataObject.GetData(format, autoConvert) : null;
+    private static object? GetData(string format, bool autoConvert)
+        => GetDataObject() is { } dataObject ? dataObject.GetData(format, autoConvert) : null;
+
+    /// <summary>
+    ///  Retrieves data from the <see cref="Clipboard"/> in format named after <typeparamref name="T"/>, if that data is of type <typeparamref name="T"/>.
+    ///  This is a safe alternative to <see cref="GetData(string)"/> that does not use BinaryFormatter to deserialize the payload.
+    /// </summary>
+    /// <exception cref="ThreadStateException">The current thread is not in single-threaded apartment (STA) mode.</exception>
+    /// <exception cref="NotSupportedException">If application does not support <see cref="BinaryFormatter"/> but the object can't be deserialized otherwise.</exception>
+    public static bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>([NotNullWhen(true)] out T? data) where T : class
+        => TryGetData(typeof(T).FullName!, out data);
+
+    /// <summary>
+    ///  Retrieves data from the <see cref="Clipboard"/> in the specified format if that data is of type <typeparamref name="T"/>.
+    ///  This is a safe alternative to <see cref="GetData(string)"/> that does not use BinaryFormatter to deserialize the payload.
+    /// </summary>
+    public static bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, [NotNullWhen(true)] out T? data) where T : class
+        => TryGetDataInternal(format, s_safeBinder, autoConvert: false, out data);
+
+    /// <summary>
+    ///  Retrieves data from the <see cref="Clipboard"/> in the specified format if that data is of type <typeparamref name="T"/>.
+    ///  This is a safe alternative to <see cref="GetData(string)"/> that does not use BinaryFormatter to deserialize the payload.
+    ///  Binder is used only for non-OLE formats.
+    /// </summary>
+    public static bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, SerializationBinder binder, [NotNullWhen(true)] out T? data) where T : class
+        => TryGetDataInternal(format, binder, autoConvert: false, out data);
+
+    private static bool TryGetDataInternal<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, SerializationBinder binder, bool autoConvert, [NotNullWhen(true)] out T? data) where T : class
+    {
+        data = null;
+        return GetDataObject() is DataObject dataObject && dataObject.TryGetData(format, binder, autoConvert, out data);
+    }
 
     /// <summary>
     ///  Retrieves a collection of file names from the <see cref="Clipboard"/>.
@@ -216,7 +250,7 @@ public static class Clipboard
     {
         StringCollection result = [];
 
-        if (GetData(DataFormats.FileDropConstant, autoConvert: true) is string[] strings)
+        if (TryGetDataInternal(DataFormats.FileDropConstant, s_safeBinder, autoConvert: true, out string[]? strings))
         {
             result.AddRange(strings);
         }
@@ -227,7 +261,22 @@ public static class Clipboard
     /// <summary>
     ///  Retrieves an image from the <see cref="Clipboard"/>.
     /// </summary>
-    public static Image? GetImage() => GetData(DataFormats.Bitmap, autoConvert: true) as Image;
+    public static Image? GetImage()
+    {
+        // TanyaSo - need to support IsAssignable
+        if (TryGetDataInternal(DataFormats.Bitmap, s_unsafeBinder, autoConvert: true, out Bitmap? bitmap))
+        {
+            return bitmap;
+        }
+
+        if (TryGetDataInternal(DataFormats.Bitmap, s_unsafeBinder, autoConvert: true, out Metafile? metafile))
+        {
+            return metafile;
+        }
+
+        // This method is already safe because it goes through the BitmapBinder.
+        return GetData(DataFormats.Bitmap, autoConvert: true) as Image;
+    }
 
     /// <summary>
     ///  Retrieves text data from the <see cref="Clipboard"/> in the <see cref="TextDataFormat.UnicodeText"/> format.
@@ -252,8 +301,8 @@ public static class Clipboard
     /// <summary>
     ///  Clears the <see cref="Clipboard"/> and then adds data in the <see cref="DataFormats.WaveAudio"/> format.
     /// </summary>
-    public static void SetAudio(Stream audioStream) =>
-        SetDataObject(new DataObject(DataFormats.WaveAudioConstant, audioStream.OrThrowIfNull()), copy: true);
+    public static void SetAudio(Stream audioStream)
+         => SetDataObject(new DataObject(DataFormats.WaveAudioConstant, audioStream.OrThrowIfNull()), copy: true);
 
     /// <summary>
     ///  Clears the Clipboard and then adds data in the specified format.
@@ -268,6 +317,14 @@ public static class Clipboard
         // Note: We delegate argument checking to IDataObject.SetData, if it wants to do so.
         SetDataObject(new DataObject(format, data), copy: true);
     }
+
+    /// <summary>
+    ///  Places nonpersistent data of type <typeparamref name="T"/> on the system clipboard.
+    /// </summary>
+    /// <param name="data">The data of type T to place on the clipboard.</param>
+    /// <typeparam name="T">The type of data to place on the clipboard.</typeparam>
+    public static void SetDataAsJson<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(T data) where T : class
+        => SetData(typeof(T).FullName!, data); // SetDataAsJson(typeof(T).FullName!, data)
 
     /// <summary>
     ///  Clears the Clipboard and then adds a collection of file names in the <see cref="DataFormats.FileDrop"/> format.
@@ -288,7 +345,7 @@ public static class Clipboard
             // These are the only error states for Path.GetFullPath
             if (string.IsNullOrEmpty(path) || path.Contains('\0'))
             {
-                throw new ArgumentException(string.Format(SR.Clipboard_InvalidPath, path, "filePaths"));
+                throw new ArgumentException(string.Format(SR.Clipboard_InvalidPath, path, nameof(filePaths)));
             }
         }
 
@@ -298,8 +355,8 @@ public static class Clipboard
     /// <summary>
     ///  Clears the Clipboard and then adds an <see cref="Image"/> in the <see cref="DataFormats.Bitmap"/> format.
     /// </summary>
-    public static void SetImage(Image image) =>
-        SetDataObject(new DataObject(DataFormats.BitmapConstant, autoConvert: true, image.OrThrowIfNull()), copy: true);
+    public static void SetImage(Image image)
+        => SetDataObject(new DataObject(DataFormats.BitmapConstant, autoConvert: true, image.OrThrowIfNull()), copy: true);
 
     /// <summary>
     ///  Clears the Clipboard and then adds text data in the <see cref="TextDataFormat.UnicodeText"/> format.
@@ -326,4 +383,13 @@ public static class Clipboard
         TextDataFormat.CommaSeparatedValue => DataFormats.CommaSeparatedValue,
         _ => DataFormats.UnicodeText,
     };
+
+    internal static readonly SerializationBinder s_safeBinder = SafeRestrictiveBinder.s_instance;
+
+    /// <devdoc>
+    ///  When we are ready to deserialize using the BinaryFormatter, and binder is still null,
+    ///  we will assume that the user does not want to use unsafe APIs.
+    /// </devdoc>
+    internal static readonly SerializationBinder? s_unsafeBinder
+        = Switches.ClipboardEnableUnsafeBinaryFormatterDeserialization ? UnsafeCompatibleBinder.s_instance : null;
 }

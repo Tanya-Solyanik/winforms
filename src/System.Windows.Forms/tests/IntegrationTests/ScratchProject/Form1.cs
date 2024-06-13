@@ -14,23 +14,32 @@ public partial class Form1 : Form
     {
         InitializeComponent();
 
-        Action[] writes =
+        Action[] writers =
         {
             ClipboardSetDataTestData,
             WriteAsPersistentObject,
             WriteBitmapWithStandardFormat
         };
 
+        Action[] readers =
+        {
+            ClipboardTryGetDataOfTestData,
+            ClipboardTryGetDataOfTestDataByTypeName,
+            ClipboardTryGetDataOfTestDataAsPersistentObj,
+            ReadFromDataObject,
+            ReadOfBitmap
+        };
+
         int x = 40;
         int y = 10;
         Button button;
-        foreach (var write in writes)
+        foreach (var write in writers)
         {
             button = new()
             {
                 Text = write.GetMethodInfo().Name,
                 Location = new Point(x, y),
-                Size = new Size(150, 50)
+                Size = new Size(160, 50)
             };
 
             button.Click += (sender, e) => write();
@@ -39,23 +48,15 @@ public partial class Form1 : Form
             y += 60;
         }
 
-        Action[] reads =
-        {
-            ReadFromDataObject,
-            ClipboardTryGetDataOfTestData,
-            ClipboardTryGetDataOfTestDataByTypeName,
-            ReadOfBitmap
-        };
-
-        x += 190;
+        x += 200;
         y = 10;
-        foreach (var read in reads)
+        foreach (var read in readers)
         {
             button = new()
             {
                 Text = read.GetMethodInfo().Name,
                 Location = new Point(x, y),
-                Size = new Size(150, 50)
+                Size = new Size(160, 50)
             };
 
             button.Click += (sender, e) => read();
@@ -70,7 +71,7 @@ public partial class Form1 : Form
             RoundTripPenData
         };
 
-        x += 190;
+        x += 200;
         y = 10;
         foreach (var roundtrip in roundtrips)
         {
@@ -78,7 +79,7 @@ public partial class Form1 : Form
             {
                 Text = roundtrip.GetMethodInfo().Name,
                 Location = new Point(x, y),
-                Size = new Size(150, 50)
+                Size = new Size(160, 50)
             };
 
             button.Click += (sender, e) => roundtrip();
@@ -88,7 +89,7 @@ public partial class Form1 : Form
         }
     }
 
-    #region Reads
+    #region Readers
     private void ClipboardTryGetDataOfTestData()
     {
         if (Clipboard.TryGetData<TestData>(out var data))
@@ -99,6 +100,8 @@ public partial class Form1 : Form
         {
             Text = "Could not retrieve data off the clipboard.";
         }
+
+        Clipboard.Clear();
     }
 
     private void ClipboardTryGetDataOfTestDataByTypeName()
@@ -111,6 +114,22 @@ public partial class Form1 : Form
         {
             Text = "Could not retrieve data off the clipboard.";
         }
+
+        Clipboard.Clear();
+    }
+
+    private void ClipboardTryGetDataOfTestDataAsPersistentObj()
+    {
+        if (Clipboard.TryGetData<TestData>("WindowsForms10PersistentObject", out var data))
+        {
+            Text = $"{data._text1} {data._text2}";
+        }
+        else
+        {
+            Text = "Could not retrieve data off the clipboard.";
+        }
+
+        Clipboard.Clear();
     }
 
     // Get the bitmap from clipboard in another application with targeting 4.8
@@ -125,6 +144,8 @@ public partial class Form1 : Form
         {
             Text = "Could not retrieve data off the clipboard.";
         }
+
+        Clipboard.Clear();
     }
 
     private void ReadFromDataObject()
@@ -138,11 +159,13 @@ public partial class Form1 : Form
         {
             Text = "Could not retrieve data off the clipboard.";
         }
+
+        Clipboard.Clear();
     }
 
     #endregion
 
-    #region Writes
+    #region Writers
     private void ClipboardSetDataTestData()
     {
         var data = new TestData("Hello", "World");

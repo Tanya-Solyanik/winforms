@@ -13,8 +13,8 @@ internal static partial class LocalAppContextSwitches
 {
     // Returns value of given switch using provided cache.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool GetSwitchValue(string switchName, ref bool switchValue) =>
-        AppContext.TryGetSwitch(switchName, out switchValue);
+    internal static bool GetSwitchValue(string switchName, ref bool switchValue)
+        => AppContext.TryGetSwitch(switchName, out switchValue);
 
     // Returns value of given switch using provided cache.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

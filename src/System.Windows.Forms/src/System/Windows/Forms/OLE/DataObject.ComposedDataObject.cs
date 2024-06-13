@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.Serialization;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
@@ -99,6 +100,30 @@ public unsafe partial class DataObject
         object? IDataObject.GetData(string format, bool autoConvert) => _winFormsDataObject.GetData(format, autoConvert);
         object? IDataObject.GetData(string format) => _winFormsDataObject.GetData(format);
         object? IDataObject.GetData(Type format) => _winFormsDataObject.GetData(format);
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, SerializationBinder binder, bool autoConvert, [NotNullWhen(true)] out T? data) where T : class
+        {
+            data = null;
+            return _winFormsDataObject.TryGetData(format, binder, autoConvert, out data);
+        }
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert, [NotNullWhen(true)] out T? data) where T : class
+        {
+            data = null;
+            return _winFormsDataObject.TryGetData(format, autoConvert, out data);
+        }
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, [NotNullWhen(true)] out T? data) where T : class
+        {
+            data = null;
+            return _winFormsDataObject.TryGetData(format, out data);
+        }
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>([NotNullWhen(true)] out T? data) where T : class
+        {
+            data = null;
+            return _winFormsDataObject.TryGetData(out data);
+        }
+
         bool IDataObject.GetDataPresent(string format, bool autoConvert) => _winFormsDataObject.GetDataPresent(format, autoConvert);
         bool IDataObject.GetDataPresent(string format) => _winFormsDataObject.GetDataPresent(format);
         bool IDataObject.GetDataPresent(Type format) => _winFormsDataObject.GetDataPresent(format);

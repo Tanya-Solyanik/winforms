@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
+using SerializationBinder = System.Runtime.Serialization.SerializationBinder;
 
 namespace System.Windows.Forms;
 
@@ -92,12 +93,20 @@ public unsafe partial class DataObject :
     internal IDataObject? OriginalIDataObject => _innerData.OriginalIDataObject;
 
     #region IDataObject
-    public virtual object? GetData(string format, bool autoConvert) =>
-        ((IDataObject)_innerData).GetData(format, autoConvert);
+    public virtual object? GetData(string format, bool autoConvert)
+        => ((IDataObject)_innerData).GetData(format, autoConvert);
 
     public virtual object? GetData(string format) => GetData(format, autoConvert: true);
 
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
+
+    // All other IDataObject.TryGet overrides are implemented to call this method.
+    // Binder will be checked for null before we use the BinaryFormatter deserialization.
+    // TanyaSo: call this method from all the other TryGet methods.
+    // null binder will throw if we get to the BinaryFormatter deserialization.
+    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format, SerializationBinder binder, bool autoConvert, [NotNullWhen(true)] out T? data) where T : class
+            => ((IDataObject)_innerData).TryGetData(format, binder, autoConvert: autoConvert, out data);
 
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
@@ -245,7 +254,7 @@ public unsafe partial class DataObject :
         ((ComTypes.IDataObject)_innerData).QueryGetData(ref formatetc);
 
     void ComTypes.IDataObject.SetData(ref FORMATETC pFormatetcIn, ref STGMEDIUM pmedium, bool fRelease) =>
-        ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
+ ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
 
     #endregion
 
