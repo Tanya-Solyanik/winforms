@@ -3,6 +3,7 @@
 
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using Com = Windows.Win32.System.Com;
@@ -98,6 +99,16 @@ public unsafe partial class DataObject :
     public virtual object? GetData(string format) => GetData(format, autoConvert: true);
 
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
+
+    // All other IDataObject.TryGet overrides are implemented to call this method.
+    // Binder will be checked for null before we use the BinaryFormatter deserialization.
+    // TanyaSo: call this method from all the other TryGet methods.
+    // null binder will throw if we get to the BinaryFormatter deserialization.
+    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+#pragma warning disable CS3001 // Argument type is not CLS-compliant
+        string format, Func<TypeName, Type> resolver, bool autoConvert, [NotNullWhen(true)] out T? data) =>
+            ((IDataObject)_innerData).TryGetData(format, resolver, autoConvert: autoConvert, out data);
+#pragma warning restore CS3001 // Argument type is not CLS-compliant
 
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
@@ -245,7 +256,7 @@ public unsafe partial class DataObject :
         ((ComTypes.IDataObject)_innerData).QueryGetData(ref formatetc);
 
     void ComTypes.IDataObject.SetData(ref FORMATETC pFormatetcIn, ref STGMEDIUM pmedium, bool fRelease) =>
-        ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
+ ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
 
     #endregion
 

@@ -7,11 +7,11 @@ namespace ScratchProject;
 
 internal static class Program
 {
-    [STAThread]
+    // [STAThread]
     public static void Main()
     {
         Application.EnableVisualStyles();
-        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        Application.SetHighDpiMode(HighDpiMode.DpiUnaware);
         Application.Run(new Form1());
     }
 }

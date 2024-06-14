@@ -18,7 +18,7 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void Clear()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         string text = GetUniqueText();
         clipboard.SetText(text);
         Assert.True(Clipboard.ContainsText());
@@ -29,7 +29,7 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void Text()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         string text = GetUniqueText();
         clipboard.SetText(text, TextDataFormat.UnicodeText);
         Assert.Equal(Clipboard.ContainsText(), clipboard.ContainsText());
@@ -41,7 +41,7 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void Image()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         using Bitmap image = new(2, 2);
         Assert.Equal(Clipboard.ContainsImage(), clipboard.ContainsImage());
         Assert.Equal(Clipboard.GetImage(), clipboard.GetImage());
@@ -51,7 +51,7 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void Audio()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         Assert.Equal(Clipboard.ContainsAudio(), clipboard.ContainsAudio());
         // Not tested:
         //   Public Function GetAudioStream() As Stream
@@ -62,7 +62,7 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void FileDropList()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         Assert.Equal(Clipboard.ContainsFileDropList(), clipboard.ContainsFileDropList());
         // Not tested:
         //   Public Function GetFileDropList() As StringCollection
@@ -72,7 +72,7 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void Data()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         string data = GetUniqueText();
         clipboard.SetData(DataFormats.UnicodeText, data);
         Assert.Equal(Clipboard.ContainsData(DataFormats.UnicodeText), clipboard.ContainsData(DataFormats.UnicodeText));
@@ -82,18 +82,18 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void DataOfT_BinaryFormatterDisabled_Success()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         string data = GetUniqueText();
         clipboard.SetDataAsJson(data);
 
-        clipboard.TryGetData(out string? result).Should().BeTrue();
+        clipboard.TryGetData(out string? result).Should().BeTrue();  // TanyaSo : fails
         result.Should().Be(data);
     }
 
     [WinFormsFact]
     public void DataOfT_BinaryFormatterDisabled_Fail()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         clipboard.SetDataAsJson(new Button());
 
         clipboard.TryGetData(out Button? result).Should().BeFalse();
@@ -102,20 +102,19 @@ public class ClipboardProxyTests
     [WinFormsFact]
     public void DataOfT_BinaryFormatterEnabled_Success()
     {
-        // TanyaSo todo
         using BinaryFormatterScope scope = new(enable: true);
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         TestData data = new("thing1", "thing2");
         clipboard.SetDataAsJson(data);
 
-        clipboard.TryGetData(out TestData? result).Should().BeTrue();
+        clipboard.TryGetData(out TestData? result).Should().BeTrue(); // TanyaSo todo
         result.Should().Be(data);
     }
 
     [WinFormsFact]
     public void DataObject()
     {
-        var clipboard = (new Computer()).Clipboard;
+        var clipboard = new Computer().Clipboard;
         string data = GetUniqueText();
         Assert.Equal(Clipboard.GetDataObject()!.GetData(DataFormats.UnicodeText), clipboard.GetDataObject().GetData(DataFormats.UnicodeText));
         clipboard.SetDataObject(new DataObject(data));

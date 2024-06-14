@@ -59,4 +59,38 @@ internal static class WinFormsBinaryFormattedObjectExtensions
         format.TryGetFrameworkObject(out value)
         || format.TryGetBitmap(out value)
         || format.TryGetImageListStreamer(out value);
+
+    public static (string? rootTypeName, string? rootAssemblyName) GetRootTypeName(this BinaryFormattedObject format)
+    {
+        if (format.RootRecord is not ClassRecord record)
+        {
+            return (null, null);
+        }
+
+        string? assemblyName = record.LibraryId.IsNull
+            ? typeof(object).Assembly.FullName
+            : format[record.LibraryId] is BinaryLibrary library ? library.LibraryName : null;
+
+        return (record.Name, assemblyName);
+    }
+
+    /// <summary>
+    ///  Verify if this binary formatter object contains an object of <typeparamref name="T"/> type, if that type is supported by the binary format.
+    /// </summary>
+    public static bool Contains<T>(this BinaryFormattedObject format)
+    {
+        // Is this always a class record - test int and array of ints?
+        if (format.RootRecord is not ClassRecord record)
+        {
+            return false;   // TanyaSo let BinaryFormatter to deserialize it if configured?
+        }
+
+        // TanyaSo: What happens with the TypeForwardedFrom  - test bitmap
+        string typeName = typeof(T).FullName!;
+        string assemblyName = typeof(T).Assembly.FullName!;
+
+        (string? rootTypeName, string? rootAssemblyName) = format.GetRootTypeName();
+
+        return rootTypeName == typeName && rootAssemblyName == assemblyName;
+    }
 }
