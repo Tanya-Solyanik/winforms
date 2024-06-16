@@ -1,14 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Windows.Forms.BinaryFormat;
 using Com = Windows.Win32.System.Com;
-using System.Drawing;
 
 namespace System.Windows.Forms;
 
@@ -391,7 +393,7 @@ public unsafe partial class DataObject
                 }
             }
 
-            private static Image? TryGetBitmapData(Com.IDataObject* dataObject, string format)
+            private static Bitmap? TryGetBitmapData(Com.IDataObject* dataObject, string format)
             {
                 if (format != DataFormats.BitmapConstant)
                 {
@@ -418,7 +420,7 @@ public unsafe partial class DataObject
                     Debug.WriteLineIf(hr == HRESULT.CLIPBRD_E_BAD_DATA, "CLIPBRD_E_BAD_DATA returned when trying to get clipboard data.");
                 }
 
-                Image? data = null;
+                Bitmap? data = null;
 
                 try
                 {
@@ -426,10 +428,10 @@ public unsafe partial class DataObject
                     // have to do the really expensive thing of cloning the image so we can release the HBITMAP.
                     if ((uint)medium.tymed == (uint)TYMED.TYMED_GDI
                         && !medium.hGlobal.IsNull
-                        && Image.FromHbitmap(medium.hGlobal) is Image clipboardImage)
+                        && Image.FromHbitmap(medium.hGlobal) is Bitmap clipboardBitmap)
                     {
-                        data = (Image)clipboardImage.Clone();
-                        clipboardImage.Dispose();
+                        data = (Bitmap)clipboardBitmap.Clone();
+                        clipboardBitmap.Dispose();
                     }
                 }
                 finally
@@ -481,6 +483,26 @@ public unsafe partial class DataObject
             object? IDataObject.GetData(string format) => ((IDataObject)this).GetData(format, autoConvert: true);
 
             object? IDataObject.GetData(Type format) => ((IDataObject)this).GetData(format.FullName!);
+
+            bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, Func<TypeName, Type> resolver, bool autoConvert, [NotNullWhen(true), MaybeNullWhen(false)] out T data)
+            {
+                using var nativeDataObject = _nativeDataObject.GetInterface();
+
+                data = GetObjectFromDataObject<T>(nativeDataObject, format, resolver, out bool doNotContinue)!;
+                if (doNotContinue
+                    || !autoConvert
+                    || (data is not null && data is not MemoryStream) // TanyaSo todo if I have unicode text on the clipboard, would format == test give me a memory stream?
+                    || GetMappedFormats(format) is not { } mappedFormats
+                    || mappedFormats.Length <= 1)
+                {
+                    return data is object;
+                }
+
+                // How to get a MemoryStream and derived types as opposed to exactly memory stream?
+                //  GetObjectFromDataObject<MemoryStream>(nativeDataObject, format, out bool doNotContinue);
+
+                return data is object;
+            }
 
             bool IDataObject.GetDataPresent(Type format) => GetDataPresent(format.FullName!);
 
@@ -574,6 +596,281 @@ public unsafe partial class DataObject
                 using var nativeDataObject = _nativeDataObject.GetInterface();
                 HRESULT hr = nativeDataObject.Value->QueryGetData(formatEtc);
                 return hr.Succeeded;
+            }
+
+            /// <inheritdoc name= "GetObjectFromDataObject" />
+            private static T? GetObjectFromDataObject<T>(Com.IDataObject* dataObject, string format, Func<TypeName, Type> resolver, out bool doNotContinue)
+            {
+                T? data = default;
+                doNotContinue = false;
+                try
+                {
+                    if (typeof(T).IsAssignableTo(typeof(Bitmap)))
+                    {
+                        Bitmap? bitmap = TryGetBitmapData(dataObject, format);
+                        if (bitmap is object)
+                        {
+                            return (T)Convert.ChangeType(bitmap, typeof(T));
+                        }
+                    }
+
+                    data = TryGetHGLOBALData(dataObject, format, resolver, out doNotContinue);
+
+                    if (data is null && !doNotContinue)
+                    {
+                        // Lastly check to see if the data is an IStream.
+                        data = TryGetIStreamData(dataObject, format, resolver);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.Fail(e.ToString());
+                }
+
+                return data;
+
+                static T? TryGetHGLOBALData(Com.IDataObject* dataObject, string format, Func<TypeName, Type> resolver, out bool doNotContinue)
+                {
+                    doNotContinue = false;
+
+                    Com.FORMATETC formatetc = new()
+                    {
+                        cfFormat = (ushort)DataFormats.GetFormat(format).Id,
+                        dwAspect = (uint)Com.DVASPECT.DVASPECT_CONTENT,
+                        lindex = -1,
+                        tymed = (uint)Com.TYMED.TYMED_HGLOBAL
+                    };
+
+                    if (dataObject->QueryGetData(formatetc).Failed)
+                    {
+                        return default;
+                    }
+
+                    T? data = default;
+                    HRESULT result = dataObject->GetData(formatetc, out Com.STGMEDIUM medium);
+
+                    // One of the ways this can happen is when we attempt to put binary formatted data onto the
+                    // clipboard, which will succeed as Windows ignores all errors when putting data on the clipboard.
+                    // The data state, however, is not good, and this error will be returned by Windows when asking to
+                    // get the data out.
+                    Debug.WriteLineIf(result == HRESULT.CLIPBRD_E_BAD_DATA, "CLIPBRD_E_BAD_DATA returned when trying to get clipboard data.");
+
+                    try
+                    {
+                        if (medium.tymed == Com.TYMED.TYMED_HGLOBAL && !medium.hGlobal.IsNull)
+                        {
+                            data = GetDataFromHGLOBAL<T>(medium.hGlobal, format, resolver);
+                        }
+                    }
+                    catch (RestrictedTypeDeserializationException)
+                    {
+                        // T is compatible with format, but the serialized data is not a T.
+                        doNotContinue = true;
+                    }
+                    catch (NotSupportedException)
+                    {
+                        throw;
+                    }
+                    catch
+                    {
+                        // SerializationException?
+                    }
+                    finally
+                    {
+                        PInvoke.ReleaseStgMedium(ref medium);
+                    }
+
+                    return data;
+                }
+
+                static unsafe T? TryGetIStreamData(Com.IDataObject* dataObject, string format, Func<TypeName, Type> resolver)
+                {
+                    Com.FORMATETC formatEtc = new()
+                    {
+                        cfFormat = (ushort)DataFormats.GetFormat(format).Id,
+                        dwAspect = (uint)Com.DVASPECT.DVASPECT_CONTENT,
+                        lindex = -1,
+                        tymed = (uint)Com.TYMED.TYMED_ISTREAM
+                    };
+
+                    // Limit the # of exceptions we may throw below.
+                    if (dataObject->QueryGetData(formatEtc).Failed
+                        || dataObject->GetData(formatEtc, out Com.STGMEDIUM medium).Failed)
+                    {
+                        return default;
+                    }
+
+                    HGLOBAL hglobal = default;
+                    try
+                    {
+                        if (medium.tymed != Com.TYMED.TYMED_ISTREAM || medium.hGlobal.IsNull)
+                        {
+                            return default;
+                        }
+
+                        using ComScope<Com.IStream> pStream = new((Com.IStream*)medium.hGlobal);
+                        pStream.Value->Stat(out Com.STATSTG sstg, (uint)Com.STATFLAG.STATFLAG_DEFAULT);
+
+                        hglobal = PInvokeCore.GlobalAlloc(GLOBAL_ALLOC_FLAGS.GMEM_MOVEABLE | GLOBAL_ALLOC_FLAGS.GMEM_ZEROINIT, (uint)sstg.cbSize);
+
+                        // Not throwing here because the other out of memory condition on GlobalAlloc
+                        // happens inside innerData.GetData and gets turned into a null return value.
+                        if (hglobal.IsNull)
+                        {
+                            return default;
+                        }
+
+                        void* ptr = PInvokeCore.GlobalLock(hglobal);
+                        pStream.Value->Read((byte*)ptr, (uint)sstg.cbSize, null);
+                        PInvokeCore.GlobalUnlock(hglobal);
+
+                        return GetDataFromHGLOBAL<T>(hglobal, format, resolver);
+                    }
+                    finally
+                    {
+                        if (!hglobal.IsNull)
+                        {
+                            PInvokeCore.GlobalFree(hglobal);
+                        }
+
+                        PInvoke.ReleaseStgMedium(ref medium);
+                    }
+                }
+            }
+
+            ///  <inheritdoc cref="GetDataFromHGLOBAL(HGLOBAL, string)"/>
+            private static T? GetDataFromHGLOBAL<T>(HGLOBAL hglobal, string format, Func<TypeName, Type> resolver)
+            {
+                if (hglobal == 0)
+                {
+                    return default;
+                }
+
+                return format switch
+                {
+                    DataFormats.TextConstant or DataFormats.RtfConstant or DataFormats.OemTextConstant => IsString()
+                        ? CastOrDefault(ReadStringFromHGLOBAL(hglobal, unicode: false))
+                        : default,
+                    DataFormats.HtmlConstant => IsString()
+                        ? CastOrDefault(ReadUtf8StringFromHGLOBAL(hglobal))
+                        : default,
+                    DataFormats.UnicodeTextConstant => IsString()
+                        ? CastOrDefault(ReadStringFromHGLOBAL(hglobal, unicode: true))
+                        : default,
+                    DataFormats.FileDropConstant => IsStringArray()
+                        ? CastOrDefault(ReadFileListFromHDROP((HDROP)(nint)hglobal))
+                        : default,
+                    CF_DEPRECATED_FILENAME => IsStringArray()
+                        ? CastOrDefault(new string[] { ReadStringFromHGLOBAL(hglobal, unicode: false) })
+                        : default,
+                    CF_DEPRECATED_FILENAMEW => IsStringArray()
+                        ? CastOrDefault(new string[] { ReadStringFromHGLOBAL(hglobal, unicode: true) })
+                        : default,
+                    _ => ReadObjectFromHGLOBAL(hglobal, RestrictDeserializationToSafeTypes(format))
+                };
+
+                static T? CastOrDefault(object? value) => value is T t ? t : default;
+
+                static bool IsString() => typeof(T).IsAssignableTo(typeof(string));
+
+                static bool IsStringArray() => typeof(T).IsAssignableTo(typeof(string[]));
+
+                T? ReadObjectFromHGLOBAL(HGLOBAL hglobal, bool restrictDeserialization)
+                {
+                    MemoryStream stream = ReadByteStreamFromHGLOBAL(hglobal, out bool isSerializedObject);
+                    return isSerializedObject
+                        ? ReadObjectFromStream(stream, restrictDeserialization)
+                        : CastOrDefault(stream);
+
+                    T? ReadObjectFromStream(MemoryStream stream, bool restrictDeserialization)
+                    {
+                        long startPosition = stream.Position;
+
+                        try
+                        {
+                            BinaryFormattedObject binaryFormattedObject = new(stream);
+                            // Try to read the known safe types.
+
+                            if (binaryFormattedObject.TryGetObject(out object? value))
+                            {
+                                // I'm ignoring the "trimming not supported" message here.
+                                return CastOrDefault(value);
+                            }
+
+                            if (!binaryFormattedObject.Contains<T>())
+                            {
+                                if (resolver is null)
+                                {
+                                    return default;
+                                }
+
+                                if (resolver != Clipboard.CompatibleResolver && binaryFormattedObject.TryGetRootTypeName(out TypeName? name))
+                                {
+                                    Type? type;
+                                    try
+                                    {
+                                        type = resolver(name);
+                                    }
+                                    catch (NotSupportedException)
+                                    {
+                                        type = null;
+                                    }
+
+                                    if (type is null || !type.IsAssignableTo(typeof(T)))
+                                    {
+                                        return default;
+                                    }
+                                }
+                            }
+
+                            // TanyaSo: when do I get an exception and when do I get a null?
+                            // I'm assuming that if contains succeeded and Deserialize succeeded, then BF will not do any better.
+                            value = binaryFormattedObject.Deserialize();
+                            return CastOrDefault(value);
+                        }
+                        catch (NotSupportedException)
+                        {
+                            // try BinaryFormatter
+                        }
+                        catch (SerializationException)
+                        {
+                        }
+                        catch (Exception ex) when (!ex.IsCriticalException())
+                        {
+                            // What exceptions are expected here?
+                            return default;
+                        }
+
+                        if (resolver is null)
+                        {
+                            return default;
+                        }
+
+                        // This check is to help in trimming scenarios with a trim warning on a call to BinaryFormatter.Deserialize(), which has a RequiresUnreferencedCode annotation.
+                        // If the flag is false, the trimmer will not generate a warning, since BinaryFormatter.Deserialize() will not be called,
+                        // If the flag is true, the trimmer will generate a warning for calling a method that has a RequiresUnreferencedCode annotation.
+                        if (!EnableUnsafeBinaryFormatterInNativeObjectSerialization)
+                        {
+                            // Other failures result in returning false, this one is kept consistent with other use cases.
+                            throw new NotSupportedException(SR.BinaryFormatterNotSupported);
+                        }
+
+                        stream.Position = startPosition;
+
+                        // we only get here if the user had explicitly opted into the binary formatter usage in the Clipboard.
+#pragma warning disable SYSLIB0011 // Type or member is obsolete
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
+                        object result = new BinaryFormatter()
+                        {
+                            Binder = restrictDeserialization ? new BitmapBinder() : new ComposedBinder(typeof(T), resolver),
+                            AssemblyFormat = FormatterAssemblyStyle.Simple
+                        }.Deserialize(stream);
+#pragma warning restore SYSLIB0050
+#pragma warning restore SYSLIB0011
+
+                        return CastOrDefault(result);
+                    }
+                }
             }
         }
     }

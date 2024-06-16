@@ -14,23 +14,26 @@ public partial class Form1 : Form
     {
         InitializeComponent();
 
-        Action[] writes =
+        Action[] writers =
         {
-            ClipboardSetDataTestData,
-            WriteAsPersistentObject,
-            WriteBitmapWithStandardFormat
+            ClipboardSetData
+        };
+
+        Action[] readers =
+        {
+            ClipboardGetData
         };
 
         int x = 40;
         int y = 10;
         Button button;
-        foreach (var write in writes)
+        foreach (var write in writers)
         {
             button = new()
             {
                 Text = write.GetMethodInfo().Name,
                 Location = new Point(x, y),
-                Size = new Size(150, 50)
+                Size = new Size(160, 50)
             };
 
             button.Click += (sender, e) => write();
@@ -39,23 +42,15 @@ public partial class Form1 : Form
             y += 60;
         }
 
-        Action[] reads =
-        {
-            ReadFromDataObject,
-            ClipboardTryGetDataOfTestData,
-            ClipboardTryGetDataOfTestDataByTypeName,
-            ReadOfBitmap
-        };
-
-        x += 190;
+        x += 200;
         y = 10;
-        foreach (var read in reads)
+        foreach (var read in readers)
         {
             button = new()
             {
                 Text = read.GetMethodInfo().Name,
                 Location = new Point(x, y),
-                Size = new Size(150, 50)
+                Size = new Size(160, 50)
             };
 
             button.Click += (sender, e) => read();
@@ -70,7 +65,7 @@ public partial class Form1 : Form
             RoundTripPenData
         };
 
-        x += 190;
+        x += 200;
         y = 10;
         foreach (var roundtrip in roundtrips)
         {
@@ -78,7 +73,7 @@ public partial class Form1 : Form
             {
                 Text = roundtrip.GetMethodInfo().Name,
                 Location = new Point(x, y),
-                Size = new Size(150, 50)
+                Size = new Size(160, 50)
             };
 
             button.Click += (sender, e) => roundtrip();
@@ -88,83 +83,35 @@ public partial class Form1 : Form
         }
     }
 
-    #region Reads
-    private void ClipboardTryGetDataOfTestData()
+    private void ClipboardSetData()
     {
-        if (Clipboard.TryGetData<TestData>(out var data))
-        {
-            Text = $"{data._text1} {data._text2}";
-        }
-        else
-        {
-            Text = "Could not retrieve data off the clipboard.";
-        }
+        Clipboard.SetData(DataFormats.Text, "Hello World");
+        Text = "Hello world!";
+
+        // Clipboard.SetData(
+        //    DataFormats.Bitmap, new Bitmap("D:\\winforms\\src\\System.Windows.Forms\\tests\\UnitTests\\bitmaps\\nature24bits.jpg"));
+        // Text = "Bitmap";
     }
 
-    private void ClipboardTryGetDataOfTestDataByTypeName()
+    private void ClipboardGetData()
     {
-        if (Clipboard.TryGetData<TestData>(typeof(TestData).FullName!, out var data))
+        // object? data = Clipboard.GetData(DataFormats.Bitmap);
+        // if (data is object)
+        // if (Clipboard.TryGetData<Bitmap>(DataFormats.Bitmap, out Bitmap? data))
+        // if (Clipboard.GetData<Bitmap>(DataFormats.Bitmap) is Bitmap bitmap)
+        if (Clipboard.TryGetData<string>(DataFormats.Text, out string? data))
         {
-            Text = $"{data._text1} {data._text2}";
+            Text = $"got stuff {data}";
         }
         else
         {
             Text = "Could not retrieve data off the clipboard.";
         }
+
+        Clipboard.Clear();
     }
 
     // Get the bitmap from clipboard in another application with targeting 4.8
-    private void ReadOfBitmap()
-    {
-        // if (Clipboard.TryGetData<Bitmap>(out Bitmap data, DataFormats.Bitmap))
-        if (Clipboard.TryGetData<Bitmap>(out var data))
-        {
-            Text = $"got bitmap";
-        }
-        else
-        {
-            Text = "Could not retrieve data off the clipboard.";
-        }
-    }
-
-    private void ReadFromDataObject()
-    {
-        IDataObject? iData = Clipboard.GetDataObject();
-        if (iData?.TryGetData<TestData>(out var data) == true)
-        {
-            Text = $"{data._text1} {data._text2}";
-        }
-        else
-        {
-            Text = "Could not retrieve data off the clipboard.";
-        }
-    }
-
-    #endregion
-
-    #region Writes
-    private void ClipboardSetDataTestData()
-    {
-        var data = new TestData("Hello", "World");
-        // Clipboard.SetData(typeof(TestData).FullName!, new TestData("Hello", "World"));
-        Clipboard.SetDataAsJson(data); // this helper method avoids specifying the format
-        Text = $"format {typeof(TestData).FullName!}";
-    }
-
-    private void WriteAsPersistentObject()
-    {
-        Clipboard.SetData("WindowsForms10PersistentObject", new TestData("Hello", "World"));
-        Text = $"format WindowsForms10PersistentObject";
-    }
-
-    private void WriteBitmapWithStandardFormat()
-    {
-        Clipboard.SetData(
-            DataFormats.Bitmap, "D:\\winforms\\src\\System.Windows.Forms\\tests\\UnitTests\\bitmaps\\nature24bits.jpg");
-        Text = "Bitmap";
-    }
-
-    #endregion
 
     #region RoundTrips
     public void RoundTripPenData()
@@ -172,7 +119,14 @@ public partial class Form1 : Form
         Font f1 = new("Microsoft Sans Serif", 10);
         Clipboard.SetData(DataFormats.PenData, f1);
         object? o = Clipboard.GetData(DataFormats.PenData);
-        Font? f = o as Font;
+        if (o is Font f)
+        {
+            Text = f.Name;
+        }
+        else
+        {
+            Text = "null";
+        }
     }
 
     public void RoundTripCustomFormats()
