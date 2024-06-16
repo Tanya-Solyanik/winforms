@@ -34,9 +34,8 @@ internal sealed partial class ToolStripSplitStackDragDropHandler : IDropTarget, 
 
     public void OnDragDrop(DragEventArgs e)
     {
-        if (e.Data is not null && e.Data.GetDataPresent(typeof(ToolStripItem)))
+        if (e.Data is not null && e.Data.GetDataPresent(typeof(ToolStripItem)) && e.Data.TryGetData(out ToolStripItem? item))
         {
-            ToolStripItem item = (ToolStripItem)e.Data.GetData(typeof(ToolStripItem))!;
             OnDropItem(item, _owner.PointToClient(new Point(e.X, e.Y)));
         }
     }

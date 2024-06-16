@@ -15,9 +15,7 @@ Partial Public Class Form1
 
         Dim writes As Action() =
         {
-            AddressOf ClipboardSetDataTestData,
-            AddressOf WriteAsPersistentObject,
-            AddressOf WriteBitmapWithStandardFormat
+            AddressOf ClipboardSetData
         }
 
         Dim x As Integer = 40
@@ -38,10 +36,7 @@ Partial Public Class Form1
 
         Dim reads As Action() =
         {
-            AddressOf ReadFromDataObject,
-            AddressOf ClipboardTryGetDataOfTestData,
-            AddressOf ClipboardTryGetDataOfTestDataByTypeName,
-            AddressOf ReadOfBitmap
+            AddressOf ClipboardTryGetData
         }
 
         x += 190
@@ -82,59 +77,30 @@ Partial Public Class Form1
     End Sub
 
     ' Reads
-    Private Sub ClipboardTryGetDataOfTestData()
+    Private Sub ClipboardTryGetData()
         Dim MyData As TestData = Nothing
         If Clipboard.TryGetData(Of TestData)(MyData) Then
             Text = $"{MyData._text1} {MyData._text2}"
         Else
             Text = "Could not retrieve data off the clipboard."
         End If
-    End Sub
 
-    Private Sub ClipboardTryGetDataOfTestDataByTypeName()
-        Dim MyData As TestData = Nothing
-        If Clipboard.TryGetData(Of TestData)(GetType(TestData).FullName, MyData) Then
-            Text = $"{MyData._text1} {MyData._text2}"
-        Else
-            Text = "Could not retrieve data off the clipboard."
-        End If
-    End Sub
-
-    ' Get the bitmap from clipboard in another application with targeting 4.8
-    Private Sub ReadOfBitmap()
-        Dim MyData As Bitmap = Nothing
-        If Clipboard.TryGetData(Of Bitmap)(MyData) Then
-            Text = "got bitmap"
-        Else
-            Text = "Could not retrieve data off the clipboard."
-        End If
-    End Sub
-
-    Private Sub ReadFromDataObject()
-        Dim iData As IDataObject = Clipboard.GetDataObject()
-        Dim MyData As TestData = Nothing
-        If iData?.TryGetData(Of TestData)(MyData) Then
-            Text = $"{MyData._text1} {MyData._text2}"
-        Else
-            Text = "Could not retrieve data off the clipboard."
-        End If
+        'Dim MyData As Bitmap = Nothing
+        'If Clipboard.TryGetData(Of Bitmap)(MyData) Then
+        '    Text = "got bitmap"
+        'Else
+        '    Text = "Could not retrieve data off the clipboard."
+        'End If
     End Sub
 
     ' Writes
-    Private Sub ClipboardSetDataTestData()
+    Private Sub ClipboardSetData()
         Dim data As New TestData("Hello", "World")
         Clipboard.SetData("TestData", data) ' this helper method avoids specifying the format
         Text = $"format {GetType(TestData).FullName}"
-    End Sub
 
-    Private Sub WriteAsPersistentObject()
-        Clipboard.SetData("WindowsForms10PersistentObject", New TestData("Hello", "World"))
-        Text = "format WindowsForms10PersistentObject"
-    End Sub
-
-    Private Sub WriteBitmapWithStandardFormat()
-        Clipboard.SetData(DataFormats.Bitmap, "D:\\winforms\\src\\System.Windows.Forms\\tests\\UnitTests\\bitmaps\\nature24bits.jpg")
-        Text = "Bitmap"
+        ' Clipboard.SetData(DataFormats.Bitmap, "D:\\winforms\\src\\System.Windows.Forms\\tests\\UnitTests\\bitmaps\\nature24bits.jpg")
+        ' Text = "Bitmap"
     End Sub
 
     ' RoundTrips
