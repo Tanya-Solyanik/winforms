@@ -47,8 +47,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Windows.Forms.Integr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{462AD69A-9395-4E98-882D-569CDE562559}"
 	ProjectSection(SolutionItems) = preProject
+		azure-pipelines-PR.yml = azure-pipelines-PR.yml
 		azure-pipelines.yml = azure-pipelines.yml
-		eng\common\templates\job\build.yml = eng\common\templates\job\build.yml
+		eng\pipelines\build-PR.yml = eng\pipelines\build-PR.yml
+		eng\pipelines\build.yml = eng\pipelines\build.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation", "documentation", "{C029199F-7D5C-417C-AA52-913A214E3285}"
@@ -176,6 +178,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrimTestBinaryDeserialization", "src\System.Windows.Forms\tests\IntegrationTests\TrimTestBinaryDeserialization\TrimTestBinaryDeserialization.csproj", "{CFBCC732-C988-4FE7-A21B-98A142365374}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BinaryFormatTests", "src\System.Private.Windows.Core\tests\BinaryFormatTests\BinaryFormatTests.csproj", "{57EC5288-9513-46CF-8FB7-626199690D90}"
+EndProject
+Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "ScratchVBProject", "src\System.Windows.Forms\tests\IntegrationTests\ScratchVBProject\ScratchVBProject.vbproj", "{AF0C8E96-CD23-453C-9060-AD195C430CCF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -981,6 +985,22 @@ Global
 		{57EC5288-9513-46CF-8FB7-626199690D90}.Release|x64.Build.0 = Release|Any CPU
 		{57EC5288-9513-46CF-8FB7-626199690D90}.Release|x86.ActiveCfg = Release|Any CPU
 		{57EC5288-9513-46CF-8FB7-626199690D90}.Release|x86.Build.0 = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|arm64.ActiveCfg = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|arm64.Build.0 = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|x64.Build.0 = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Debug|x86.Build.0 = Debug|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|arm64.ActiveCfg = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|arm64.Build.0 = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|x64.ActiveCfg = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|x64.Build.0 = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|x86.ActiveCfg = Release|Any CPU
+		{AF0C8E96-CD23-453C-9060-AD195C430CCF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

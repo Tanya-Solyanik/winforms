@@ -3,6 +3,7 @@
 
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using Com = Windows.Win32.System.Com;
@@ -92,12 +93,24 @@ public unsafe partial class DataObject :
     internal IDataObject? OriginalIDataObject => _innerData.OriginalIDataObject;
 
     #region IDataObject
-    public virtual object? GetData(string format, bool autoConvert) =>
-        ((IDataObject)_innerData).GetData(format, autoConvert);
+    public virtual object? GetData(string format, bool autoConvert)
+    {
+        TryGetData(format, Clipboard.Resolver, autoConvert, out object? data);
+        return data;
+    }
 
     public virtual object? GetData(string format) => GetData(format, autoConvert: true);
 
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
+
+    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+#pragma warning disable CS3001 // Argument type is not CLS-compliant
+        Func<TypeName, Type> resolver,
+#pragma warning restore CS3001 // Argument type is not CLS-compliant
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            ((IDataObject)_innerData).TryGetData(format, resolver, autoConvert, out data);
 
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
@@ -135,12 +148,16 @@ public unsafe partial class DataObject :
         return GetDataPresent(ConvertToDataFormats(format), autoConvert: false);
     }
 
-    public virtual Stream? GetAudioStream() => GetData(DataFormats.WaveAudio, autoConvert: false) as Stream;
+    public virtual Stream? GetAudioStream()
+    {
+        TryGetData(DataFormats.WaveAudio, Clipboard.Resolver, autoConvert: false, out Stream? data);
+        return data;
+    }
 
     public virtual StringCollection GetFileDropList()
     {
         StringCollection dropList = [];
-        if (GetData(DataFormats.FileDropConstant, autoConvert: true) is string[] strings)
+        if (TryGetData(DataFormats.FileDropConstant, Clipboard.Resolver, autoConvert: true, out string[]? strings))
         {
             dropList.AddRange(strings);
         }
@@ -148,7 +165,11 @@ public unsafe partial class DataObject :
         return dropList;
     }
 
-    public virtual Image? GetImage() => GetData(DataFormats.Bitmap, autoConvert: true) as Image;
+    public virtual Image? GetImage()
+    {
+        TryGetData(DataFormats.Bitmap, Clipboard.Resolver, autoConvert: true, out Image? image);
+        return image;
+    }
 
     public virtual string GetText() => GetText(TextDataFormat.UnicodeText);
 
@@ -156,7 +177,12 @@ public unsafe partial class DataObject :
     {
         // Valid values are 0x0 to 0x4
         SourceGenerated.EnumValidator.Validate(format, nameof(format));
-        return GetData(ConvertToDataFormats(format), false) is string text ? text : string.Empty;
+        if (!TryGetData(ConvertToDataFormats(format), Clipboard.Resolver, autoConvert: false, out string? text))
+        {
+            return string.Empty;
+        }
+
+        return text;
     }
 
     public virtual void SetAudio(byte[] audioBytes) => SetAudio(new MemoryStream(audioBytes.OrThrowIfNull()));
@@ -245,7 +271,7 @@ public unsafe partial class DataObject :
         ((ComTypes.IDataObject)_innerData).QueryGetData(ref formatetc);
 
     void ComTypes.IDataObject.SetData(ref FORMATETC pFormatetcIn, ref STGMEDIUM pmedium, bool fRelease) =>
-        ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
+ ((ComTypes.IDataObject)_innerData).SetData(ref pFormatetcIn, ref pmedium, fRelease);
 
     #endregion
 
