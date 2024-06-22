@@ -177,6 +177,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrimTestBinaryDeserializati
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BinaryFormatTests", "src\System.Private.Windows.Core\tests\BinaryFormatTests\BinaryFormatTests.csproj", "{57EC5288-9513-46CF-8FB7-626199690D90}"
 EndProject
+Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "ScratchVBProject", "C:\Users\tanyaso\source\repos\ScratchVBProject\ScratchVBProject\ScratchVBProject.vbproj", "{145583B4-0209-443A-9DA2-E9CF8941256A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -981,6 +983,22 @@ Global
 		{57EC5288-9513-46CF-8FB7-626199690D90}.Release|x64.Build.0 = Release|Any CPU
 		{57EC5288-9513-46CF-8FB7-626199690D90}.Release|x86.ActiveCfg = Release|Any CPU
 		{57EC5288-9513-46CF-8FB7-626199690D90}.Release|x86.Build.0 = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|arm64.ActiveCfg = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|arm64.Build.0 = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|x64.Build.0 = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Debug|x86.Build.0 = Debug|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|arm64.ActiveCfg = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|arm64.Build.0 = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|x64.ActiveCfg = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|x64.Build.0 = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|x86.ActiveCfg = Release|Any CPU
+		{145583B4-0209-443A-9DA2-E9CF8941256A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
