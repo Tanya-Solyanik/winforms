@@ -43,6 +43,41 @@ public partial class DataObjectTests
         "something custom",
     ];
 
+    private static readonly string[] s_restrictedClipboardFormats =
+    [
+        DataFormats.CommaSeparatedValue,
+        DataFormats.Dib,
+        DataFormats.Dif,
+        DataFormats.PenData,
+        DataFormats.Riff,
+        DataFormats.Tiff,
+        DataFormats.WaveAudio,
+        DataFormats.SymbolicLink,
+        DataFormats.StringFormat,
+        DataFormats.Bitmap,
+        DataFormats.EnhancedMetafile,
+        DataFormats.FileDrop,
+        DataFormats.Html,
+        DataFormats.MetafilePict,
+        DataFormats.OemText,
+        DataFormats.Palette,
+        DataFormats.Rtf,
+        DataFormats.Text,
+        DataFormats.UnicodeText,
+        "FileName",
+        "FileNameW",
+        "System.Drawing.Bitmap",
+        "  ",  // these return null and don't process the payload.
+        string.Empty,
+        null
+    ];
+
+    private static readonly string[] s_unboundedClipboardFormats =
+    [
+        DataFormats.Serializable,
+        "something custom"
+    ];
+
     private static readonly string[] s_mappedFormats =
     [
         typeof(Bitmap).FullName,
@@ -215,41 +250,38 @@ public partial class DataObjectTests
     [MemberData(nameof(GetAudioStream_TestData))]
     public void DataObject_GetAudioStream_InvokeMocked_ReturnsExpected(object result, Stream expected)
     {
+        Stream data = result as Stream;
         Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
         mockDataObject
             .Setup(o => o.GetAudioStream())
             .CallBase();
         mockDataObject
-            .Setup(o => o.GetData(DataFormats.WaveAudio, false))
-            .Returns(result)
+            .Setup(o => o.TryGetData(DataFormats.WaveAudio, Clipboard.NotSupportedResolver, false, out data))
+            .Returns(true)
             .Verifiable();
-        Assert.Same(expected, mockDataObject.Object.GetAudioStream());
-        mockDataObject.Verify(o => o.GetData(DataFormats.WaveAudio, false), Times.Once());
+        mockDataObject.Object.GetAudioStream().Should().BeSameAs(expected);
+        mockDataObject.Verify(o => o.TryGetData(DataFormats.WaveAudio, Clipboard.NotSupportedResolver, false, out data), Times.Once());
     }
 
-    public static IEnumerable<object[]> GetData_String_TestData()
-    {
-        foreach (string format in s_clipboardFormats)
-        {
-            yield return new object[] { format };
-        }
-
-        foreach (string format in s_mappedFormats)
-        {
-            yield return new object[] { format };
-        }
-
-        yield return new object[] { "  " };
-        yield return new object[] { string.Empty };
-        yield return new object[] { null };
-    }
+    public static TheoryData GetData_RestrictedFormat_TheoryData() => s_restrictedClipboardFormats.ToTheoryData();
 
     [Theory]
-    [MemberData(nameof(GetData_String_TestData))]
+    [MemberData(nameof(GetData_RestrictedFormat_TheoryData))]
     public void DataObject_GetData_InvokeStringDefault_ReturnsNull(string format)
     {
         DataObject dataObject = new();
-        Assert.Null(dataObject.GetData(format));
+        dataObject.GetData(format).Should().BeNull();
+    }
+
+    public static TheoryData GetData_UnboundedFormat_TheoryData() => s_unboundedClipboardFormats.ToTheoryData();
+
+    [Theory]
+    [MemberData(nameof(GetData_UnboundedFormat_TheoryData))]
+    public void DataObject_GetData_InvokeStringDefault_Unbounded_ReturnsNull(string format)
+    {
+        DataObject dataObject = new();
+        using BinaryFormatterInClipboardScope scope = new(enable: true);
+        dataObject.GetData(format).Should().BeNull();
     }
 
     public static IEnumerable<object[]> GetData_InvokeStringMocked_TestData()
@@ -294,42 +326,37 @@ public partial class DataObjectTests
     [MemberData(nameof(GetData_StringIDataObject_TestData))]
     public void DataObject_GetData_InvokeStringIDataObject_ReturnsExpected(string format, object result)
     {
+        object data = result;
         Mock<IDataObject> mockDataObject = new(MockBehavior.Strict);
         mockDataObject
-            .Setup(o => o.GetData(format, true))
-            .Returns(result)
+            .Setup(o => o.TryGetData(format, Clipboard.NotSupportedResolver, true, out data))
+            .Returns(true)
             .Verifiable();
         DataObject dataObject = new(mockDataObject.Object);
-        Assert.Same(result, dataObject.GetData(format));
-        mockDataObject.Verify(o => o.GetData(format, true), Times.Once());
+        dataObject.GetData(format).Should().BeSameAs(result);
+        mockDataObject.Verify(o => o.TryGetData(format, Clipboard.NotSupportedResolver, true, out data), Times.Once());
     }
 
-    public static IEnumerable<object[]> GetData_StringBool_TestData()
+    public static TheoryData<string, bool> GetData_FormatAutoConvert_TestData()
     {
+        TheoryData<string, bool> theoryData = [];
         foreach (bool autoConvert in new bool[] { true, false })
         {
-            foreach (string format in s_clipboardFormats)
+            foreach (string format in s_restrictedClipboardFormats)
             {
-                yield return new object[] { format, autoConvert };
+                theoryData.Add(format, autoConvert);
             }
-
-            foreach (string format in s_mappedFormats)
-            {
-                yield return new object[] { format, autoConvert };
-            }
-
-            yield return new object[] { "  ", autoConvert };
-            yield return new object[] { string.Empty, autoConvert };
-            yield return new object[] { null, autoConvert };
         }
+
+        return theoryData;
     }
 
     [Theory]
-    [MemberData(nameof(GetData_StringBool_TestData))]
+    [MemberData(nameof(GetData_FormatAutoConvert_TestData))]
     public void DataObject_GetData_InvokeStringBoolDefault_ReturnsNull(string format, bool autoConvert)
     {
         DataObject dataObject = new();
-        Assert.Null(dataObject.GetData(format, autoConvert));
+        dataObject.GetData(format, autoConvert).Should().BeNull();
     }
 
     public static IEnumerable<object[]> GetData_StringBoolIDataObject_TestData()
@@ -350,23 +377,24 @@ public partial class DataObjectTests
     [MemberData(nameof(GetData_StringBoolIDataObject_TestData))]
     public void DataObject_GetData_InvokeStringBoolIDataObject_ReturnsExpected(string format, bool autoConvert, object result)
     {
+        object data = result;
         Mock<IDataObject> mockDataObject = new(MockBehavior.Strict);
         mockDataObject
-            .Setup(o => o.GetData(format, autoConvert))
-            .Returns(result)
+            .Setup(o => o.TryGetData(format, Clipboard.NotSupportedResolver, autoConvert, out data))
+            .Returns(true)
             .Verifiable();
         DataObject dataObject = new(mockDataObject.Object);
-        Assert.Same(result, dataObject.GetData(format, autoConvert));
-        mockDataObject.Verify(o => o.GetData(format, autoConvert), Times.Once());
+        dataObject.GetData(format, autoConvert).Should().BeSameAs(result);
+        mockDataObject.Verify(o => o.TryGetData(format, Clipboard.NotSupportedResolver, autoConvert, out data), Times.Once());
     }
 
-    [Theory]
-    [InlineData(typeof(int))]
-    [InlineData(null)]
-    public void DataObject_GetData_InvokeTypeDefault_ReturnsNull(Type format)
+    [Fact]
+    public void DataObject_GetData_InvokeTypeDefault_ReturnsNull()
     {
         DataObject dataObject = new();
-        Assert.Null(dataObject.GetData(format));
+        dataObject.GetData((Type)null).Should().BeNull();
+        using BinaryFormatterInClipboardScope scope = new(enable: true);
+        dataObject.GetData(typeof(int[])).Should().BeNull();
     }
 
     public static IEnumerable<object[]> GetData_InvokeTypeMocked_TestData()
@@ -591,16 +619,17 @@ public partial class DataObjectTests
     [MemberData(nameof(GetFileDropList_TestData))]
     public void DataObject_GetFileDropList_InvokeMocked_ReturnsExpected(object result, string[] expected)
     {
+        string[] data = result as string[];
         Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
         mockDataObject
             .Setup(o => o.GetFileDropList())
             .CallBase();
         mockDataObject
-            .Setup(o => o.GetData(DataFormats.FileDrop, true))
-            .Returns(result)
+            .Setup(o => o.TryGetData(DataFormats.FileDropConstant, Clipboard.NotSupportedResolver, true, out data))
+            .Returns(data is not null)
             .Verifiable();
-        Assert.Equal(expected, mockDataObject.Object.GetFileDropList().Cast<string>());
-        mockDataObject.Verify(o => o.GetData(DataFormats.FileDrop, true), Times.Once());
+        mockDataObject.Object.GetFileDropList().Cast<string>().Should().BeEquivalentTo(expected);
+        mockDataObject.Verify(o => o.TryGetData(DataFormats.FileDropConstant, Clipboard.NotSupportedResolver, true, out data), Times.Once());
     }
 
     [Fact]
@@ -736,13 +765,15 @@ public partial class DataObjectTests
         Assert.Null(dataObject.GetImage());
     }
 
-    public static IEnumerable<object[]> GetImage_TestData()
+    public static TheoryData<object, Image> GetImage_TestData()
     {
-        yield return new object[] { null, null };
-        yield return new object[] { new(), null };
-
+        TheoryData<object, Image> theoryData = [];
+        theoryData.Add(null, null);
+        theoryData.Add(new(), null);
         Bitmap image = new(10, 10);
-        yield return new object[] { image, image };
+        theoryData.Add(image, image);
+
+        return theoryData;
     }
 
     [Theory]
@@ -751,23 +782,24 @@ public partial class DataObjectTests
     {
         DataObject dataObject = new();
         dataObject.SetData(DataFormats.Bitmap, result);
-        Assert.Same(expected, dataObject.GetImage());
+        dataObject.GetImage().Should().Be(expected);
     }
 
     [Theory]
     [MemberData(nameof(GetImage_TestData))]
     public void DataObject_GetImage_InvokeMocked_ReturnsExpected(object result, Image expected)
     {
+        Image data = result as Image;
         Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
         mockDataObject
             .Setup(o => o.GetImage())
             .CallBase();
         mockDataObject
-            .Setup(o => o.GetData(DataFormats.Bitmap, true))
-            .Returns(result)
+            .Setup(o => o.TryGetData(DataFormats.Bitmap, Clipboard.NotSupportedResolver, true, out data))
+            .Returns(data is not null)
             .Verifiable();
-        Assert.Same(expected, mockDataObject.Object.GetImage());
-        mockDataObject.Verify(o => o.GetData(DataFormats.Bitmap, true), Times.Once());
+        mockDataObject.Object.GetImage().Should().BeSameAs(expected);
+        mockDataObject.Verify(o => o.TryGetData(DataFormats.Bitmap, Clipboard.NotSupportedResolver, true, out data), Times.Once());
     }
 
     [Fact]
@@ -864,16 +896,17 @@ public partial class DataObjectTests
     [MemberData(nameof(GetText_TextDataFormat_TestData))]
     public void DataObject_GetText_InvokeTextDataFormatMocked_ReturnsExpected(TextDataFormat format, string expectedFormat, object result, string expected)
     {
+        string data = result as string ?? string.Empty;
         Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
         mockDataObject
             .Setup(o => o.GetText(format))
             .CallBase();
         mockDataObject
-            .Setup(o => o.GetData(expectedFormat, false))
-            .Returns(result)
+            .Setup(o => o.TryGetData(expectedFormat, Clipboard.NotSupportedResolver, false, out data))
+            .Returns(true)
             .Verifiable();
-        Assert.Same(expected, mockDataObject.Object.GetText(format));
-        mockDataObject.Verify(o => o.GetData(expectedFormat, false), Times.Once());
+        mockDataObject.Object.GetText(format).Should().BeEquivalentTo(expected);
+        mockDataObject.Verify(o => o.TryGetData(expectedFormat, Clipboard.NotSupportedResolver, false, out data), Times.Once());
     }
 
     [Theory]
@@ -951,12 +984,20 @@ public partial class DataObjectTests
     {
         DataObject dataObject = new();
         dataObject.SetAudio(audioStream);
-        Assert.Same(audioStream, dataObject.GetAudioStream());
-        Assert.Same(audioStream, dataObject.GetData(DataFormats.WaveAudio, autoConvert: true));
-        Assert.Same(audioStream, dataObject.GetData(DataFormats.WaveAudio, autoConvert: false));
-        Assert.True(dataObject.ContainsAudio());
-        Assert.True(dataObject.GetDataPresent(DataFormats.WaveAudio, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(DataFormats.WaveAudio, autoConvert: false));
+        dataObject.GetAudioStream().Should().BeSameAs(audioStream);
+        dataObject.GetData(DataFormats.WaveAudio, autoConvert: true).Should().BeSameAs(audioStream);
+        dataObject.GetData(DataFormats.WaveAudio, autoConvert: false).Should().BeSameAs(audioStream);
+        dataObject.TryGetData(DataFormats.WaveAudio, autoConvert: true, out MemoryStream stream).Should().BeTrue();
+        stream.Should().BeSameAs(audioStream);
+        dataObject.TryGetData(DataFormats.WaveAudio, autoConvert: false, out stream).Should().BeTrue();
+        stream.Should().BeSameAs(audioStream);
+        dataObject.TryGetData(DataFormats.WaveAudio, resolver: null!, autoConvert: true, out stream).Should().BeTrue();
+        stream.Should().BeSameAs(audioStream);
+        dataObject.TryGetData(DataFormats.WaveAudio, resolver: null!, autoConvert: true, out Stream stream1).Should().BeTrue();
+        stream1.Should().BeSameAs(audioStream);
+        dataObject.ContainsAudio().Should().BeTrue();
+        dataObject.GetDataPresent(DataFormats.WaveAudio, autoConvert: true).Should().BeTrue();
+        dataObject.GetDataPresent(DataFormats.WaveAudio, autoConvert: false).Should().BeTrue();
     }
 
     [Theory]
@@ -1614,7 +1655,7 @@ public partial class DataObjectTests
         // even when asked for a stream. This used to crash the process when DataObject interpreted the
         // handle as a pointer to a COM IStream without checking the storage medium it retrieved.
 
-        Assert.Null(data.GetData(DataFormats.EnhancedMetafile));
+        data.TryGetData(DataFormats.EnhancedMetafile, out Drawing.Imaging.Metafile file).Should().BeFalse();
     }
 
     private sealed class DataObjectIgnoringStorageMediumForEnhancedMetafile : IComDataObject
