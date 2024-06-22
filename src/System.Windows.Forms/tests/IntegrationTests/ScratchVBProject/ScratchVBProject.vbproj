@@ -2,30 +2,21 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <Nullable>enable</Nullable>
-    <OutputType>WinExe</OutputType>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <StartupObject>Sub Main</StartupObject>
+    <MyType>WindowsForms</MyType>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
-    <!-- These are needed to suppress the localization step picked up from Arcade targets -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <UpdateXlfOnBuild>false</UpdateXlfOnBuild>
+    <LangVersion>15.0</LangVersion>
     <ApplicationHighDpiMode>DpiUnaware</ApplicationHighDpiMode>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersPackageVersion)" />
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
   </ItemGroup>
-
-  <!-- Experiment with single file deployments
-  https://learn.microsoft.com/dotnet/core/deploying/single-file/overview?tabs=cli#sample-project-file -->
-  <PropertyGroup>
-    <PublishSingleFile>false</PublishSingleFile>
-    <SelfContained>false</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-  </PropertyGroup>
-
+  
   <!-- These normally come from $(UseWindowsForms) when $(ImplicitUsings) is enabled -->
   <ItemGroup>
     <Using Include="System.Drawing" />
@@ -34,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\System.Drawing.Common\src\System.Drawing.Common.csproj" />
+    <ProjectReference Include="..\..\..\..\Microsoft.VisualBasic.Forms\src\Microsoft.VisualBasic.Forms.vbproj" />
     <ProjectReference Include="..\..\..\src\System.Windows.Forms.csproj" />
   </ItemGroup>
 
