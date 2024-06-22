@@ -127,7 +127,6 @@ public unsafe partial class DataObject :
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
         ((IDataObject)_innerData).TryGetData(typeof(T).FullName!, Clipboard.NotSupportedResolver, autoConvert: false, out data);
 
-
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
 
@@ -293,13 +292,13 @@ public unsafe partial class DataObject :
             DataFormats.StringConstant or
             DataFormats.RtfConstant or
             DataFormats.HtmlConstant or
-            DataFormats.OemTextConstant => typeof(T).IsAssignableTo(typeof(string)),
+            DataFormats.OemTextConstant => typeof(string).IsAssignableTo(typeof(T)),
 
             DataFormats.FileDropConstant or
             CF_DEPRECATED_FILENAME or
-            CF_DEPRECATED_FILENAMEW => typeof(T).IsAssignableTo(typeof(string[])),
+            CF_DEPRECATED_FILENAMEW => typeof(string[]).IsAssignableTo(typeof(T)),
 
-            DataFormats.BitmapConstant or BitmapFullName => typeof(T).IsAssignableTo(typeof(Bitmap)),
+            DataFormats.BitmapConstant or BitmapFullName => typeof(Bitmap).IsAssignableTo(typeof(T)),
             null => false,
             _ => true
         };
