@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Reflection;
+using System.Reflection.Metadata;
 
 namespace ScratchProject;
 
@@ -144,6 +145,23 @@ public partial class Form1 : Form
         {
             Text = "null";
         }
+    }
+
+    private static Type WaveAudioResolver(TypeName typeName)
+    {
+        Type[] knownTypes = [typeof(MemoryStream), typeof(Stream)];
+
+        foreach (Type type in knownTypes)
+        {
+            TypeName parsed = TypeName.Parse($"{type.FullName}, {type.Assembly.FullName}");
+
+            if (typeName.FullName == parsed.FullName && typeName.AssemblyName?.Name == parsed.AssemblyName?.Name)
+            {
+                return type;
+            }
+        }
+
+        throw new NotSupportedException();
     }
 
     public void RoundTripCustomFormats()
