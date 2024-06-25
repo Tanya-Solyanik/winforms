@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices.ComTypes;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
@@ -32,6 +33,13 @@ public unsafe partial class DataObject
         private readonly IDataObject _winFormsDataObject;
         private readonly Com.IDataObject.Interface _nativeDataObject;
         private readonly ComTypes.IDataObject _runtimeDataObject;
+
+        // Feature switch, when set to false, BinaryFormatter is not supported in trimmed applications.
+        // This field, using the default BinaryFormatter switch, is used to control trim warnings related to using BinaryFormatter in WinForms trimming.
+        // The trimmer will generate a warning when set to true and will not generate a warning when set to false.
+        [FeatureSwitchDefinition("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization")]
+        internal static bool EnableUnsafeBinaryFormatterInNativeObjectSerialization =>
+            !AppContext.TryGetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", out bool isEnabled) || isEnabled;
 
         private ComposedDataObject(IDataObject winFormsDataObject, Com.IDataObject.Interface nativeDataObject, ComTypes.IDataObject runtimeDataObject)
         {
@@ -99,6 +107,40 @@ public unsafe partial class DataObject
         object? IDataObject.GetData(string format, bool autoConvert) => _winFormsDataObject.GetData(format, autoConvert);
         object? IDataObject.GetData(string format) => _winFormsDataObject.GetData(format);
         object? IDataObject.GetData(Type format) => _winFormsDataObject.GetData(format);
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            Func<TypeName, Type> resolver,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
+        {
+            data = default;
+            return _winFormsDataObject.TryGetData(format, resolver, autoConvert, out data);
+        }
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
+        {
+            data = default;
+            return _winFormsDataObject.TryGetData(format, autoConvert, out data);
+        }
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
+        {
+            data = default;
+            return _winFormsDataObject.TryGetData(format, out data);
+        }
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
+        {
+            data = default;
+            return _winFormsDataObject.TryGetData(out data);
+        }
+
         bool IDataObject.GetDataPresent(string format, bool autoConvert) => _winFormsDataObject.GetDataPresent(format, autoConvert);
         bool IDataObject.GetDataPresent(string format) => _winFormsDataObject.GetDataPresent(format);
         bool IDataObject.GetDataPresent(Type format) => _winFormsDataObject.GetDataPresent(format);
