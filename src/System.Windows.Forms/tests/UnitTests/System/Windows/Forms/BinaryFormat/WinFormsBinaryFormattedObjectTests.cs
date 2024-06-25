@@ -111,6 +111,22 @@ public class WinFormsBinaryFormattedObjectTests
         newImage.Size.Should().Be(sourceList.Images[0].Size);
     }
 
+    [Fact]
+    public void BinaryFormattedObject_Contains()
+    {
+        Point point = new() { X = 1, Y = 1 };
+        BinaryFormattedObject format = point.SerializeAndParse();
+        format.Contains<Point>().Should().BeTrue();
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_GetRootTypeName()
+    {
+        Point point = new() { X = 1, Y = 1 };
+        BinaryFormattedObject format = point.SerializeAndParse();
+        format.GetRootTypeName().Should().Be(typeof(Point).FullName);
+    }
+
     [Theory]
     [MemberData(nameof(BinaryFormattedObjects_TestData))]
     public void BinaryFormattedObjects_SuccessfullyParse(object value)

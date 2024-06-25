@@ -3,10 +3,12 @@
 
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
+using Switches = System.Windows.Forms.Primitives.LocalAppContextSwitches;
 
 namespace System.Windows.Forms;
 
@@ -93,11 +95,43 @@ public unsafe partial class DataObject :
 
     #region IDataObject
     public virtual object? GetData(string format, bool autoConvert) =>
-        ((IDataObject)_innerData).GetData(format, autoConvert);
+        ValidateAndGetDataInternal<object>(format, autoConvert);
 
     public virtual object? GetData(string format) => GetData(format, autoConvert: true);
 
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
+
+    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+#pragma warning disable CS3001 // Argument type is not CLS-compliant
+        Func<TypeName, Type> resolver,
+#pragma warning restore CS3001 // Argument type is not CLS-compliant
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data)
+    {
+        data = default;
+        if (!ValidateTryGetDataResolverArguments<T>(format, resolver))
+        {
+            return false;
+        }
+
+        return ((IDataObject)_innerData).TryGetData(format, resolver, autoConvert, out data);
+    }
+
+    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+        ValidateAndTryGetDataInternal(format, autoConvert, out data);
+
+    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+        ValidateAndTryGetDataInternal(format, autoConvert: false, out data);
+
+    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+        ValidateAndTryGetDataInternal(typeof(T).FullName!, autoConvert: false, out data);
 
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
@@ -135,12 +169,14 @@ public unsafe partial class DataObject :
         return GetDataPresent(ConvertToDataFormats(format), autoConvert: false);
     }
 
-    public virtual Stream? GetAudioStream() => GetData(DataFormats.WaveAudio, autoConvert: false) as Stream;
+    public virtual Stream? GetAudioStream() =>
+        ValidateAndGetDataInternal<Stream>(DataFormats.WaveAudio, autoConvert: false);
 
     public virtual StringCollection GetFileDropList()
     {
         StringCollection dropList = [];
-        if (GetData(DataFormats.FileDropConstant, autoConvert: true) is string[] strings)
+        string[]? strings = ValidateAndGetDataInternal<string[]>(DataFormats.WaveAudio, autoConvert: false);
+        if (strings is not null)
         {
             dropList.AddRange(strings);
         }
@@ -148,7 +184,7 @@ public unsafe partial class DataObject :
         return dropList;
     }
 
-    public virtual Image? GetImage() => GetData(DataFormats.Bitmap, autoConvert: true) as Image;
+    public virtual Image? GetImage() => ValidateAndGetDataInternal<Bitmap>(DataFormats.Bitmap, autoConvert: true);
 
     public virtual string GetText() => GetText(TextDataFormat.UnicodeText);
 
@@ -156,7 +192,9 @@ public unsafe partial class DataObject :
     {
         // Valid values are 0x0 to 0x4
         SourceGenerated.EnumValidator.Validate(format, nameof(format));
-        return GetData(ConvertToDataFormats(format), false) is string text ? text : string.Empty;
+
+        return ValidateAndGetDataInternal<string>(ConvertToDataFormats(format), autoConvert: false) is string text
+            ? text : string.Empty;
     }
 
     public virtual void SetAudio(byte[] audioBytes) => SetAudio(new MemoryStream(audioBytes.OrThrowIfNull()));
@@ -184,6 +222,150 @@ public unsafe partial class DataObject :
 
         SetData(ConvertToDataFormats(format), false, textData);
     }
+
+    private T? ValidateAndGetDataInternal<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert)
+    {
+        if (!ValidateGetDataArguments<T>(format))
+        {
+            return default;
+        }
+
+        ((IDataObject)_innerData).TryGetData(format, Clipboard.GetDataResolver(), autoConvert, out T? data);
+        return data;
+    }
+
+    private bool ValidateAndTryGetDataInternal<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert, out T? data)
+    {
+        if (!ValidateTryGetDataArguments<T>(format))
+        {
+            data = default;
+            return false;
+        }
+
+        return ((IDataObject)_innerData).TryGetData(format, Clipboard.NotSupportedResolver, autoConvert, out data);
+    }
+
+    internal static bool ValidateTryGetDataResolverArguments<T>(string format, Func<TypeName, Type> resolver)
+    {
+        if (ValidateFormat<T>(format))
+        {
+            return false;
+        }
+
+        Type type = typeof(T);
+        if (!IsRestrictedFormat(format)
+            && resolver is null
+            && (type == typeof(object) || type.IsInterface || type.IsAbstract))
+        {
+            // TODO: localize string
+            throw new NotSupportedException(
+                $"'{typeof(T).Name}' is not a concrete type, and could allow for " +
+                $"unbounded deserialization.  Use a concrete type or define a resolver " +
+                $"function that supports types that you are retrieving from the Clipboard.");
+        }
+
+        return true;
+    }
+
+    internal static bool ValidateTryGetDataArguments<T>(string format)
+    {
+        if (ValidateFormat<T>(format))
+        {
+            return false;
+        }
+
+        Type type = typeof(T);
+        if (!IsRestrictedFormat(format)
+            && (type == typeof(object) || type.IsInterface || type.IsAbstract))
+        {
+            // TODO: localize string
+            throw new NotSupportedException(
+                $"{type.Name}' is not a concrete type, and could allow for " +
+                $"unbounded deserialization.  Use a concrete type or define a Func<TypeName, Type>() " +
+                $"resolver function that supports  supports types that you are retrieving from the Clipboard " +
+                $"and use the TryGetData{{T}}(string, Func{{TypeName, Type}}, bool, out T) overload.");
+        }
+
+        return true;
+    }
+
+    internal static bool ValidateGetDataArguments<T>(string format)
+    {
+        if (ValidateFormat<T>(format))
+        {
+            return false;
+        }
+
+        Type type = typeof(T);
+        if (!IsRestrictedFormat(format)
+            && !Switches.ClipboardEnableUnsafeBinaryFormatterDeserialization
+            && (type == typeof(object) || type.IsInterface || type.IsAbstract))
+        {
+            // TODO: localize string
+            throw new NotSupportedException(
+                $"{type.Name}' is not a concrete type, and could allow for " +
+                $"unbounded deserialization.  Use a concrete type or define a Func<TypeName, Type>() " +
+                $"resolver function that supports  supports types that you are retrieving from the Clipboard and use the " +
+                $"TryGetData{{T}}(string, Func{{TypeName, Type}}, bool, out T) method. Alternatively the" +
+                $"application can opt in into {Switches.ClipboardEnableUnsafeBinaryFormatterDeserializationSwitchName} mode.");
+        }
+
+        return true;
+    }
+
+    /// <devdoc>
+    /// For OLE formats, we support only a few known managed types.
+    /// For unknown formats, return true, they will be further validated when reading the data.
+    /// </devdoc>
+    private static bool ValidateFormat<T>(string format)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            return false;
+        }
+
+        return format switch
+        {
+            DataFormats.TextConstant or
+            DataFormats.UnicodeTextConstant or
+            DataFormats.StringConstant or
+            DataFormats.RtfConstant or
+            DataFormats.HtmlConstant or
+            DataFormats.OemTextConstant => typeof(string) == typeof(T),
+
+            DataFormats.FileDropConstant or
+            CF_DEPRECATED_FILENAME or
+            CF_DEPRECATED_FILENAMEW => typeof(string[]) == typeof(T),
+
+            DataFormats.BitmapConstant or BitmapFullName => typeof(Bitmap) == typeof(T) || typeof(Image) == typeof(T),
+            _ => true
+        };
+    }
+
+    private static bool IsRestrictedFormat(string format) =>
+        format is DataFormats.StringConstant
+        or BitmapFullName
+        or DataFormats.CsvConstant
+        or DataFormats.DibConstant
+        or DataFormats.DifConstant
+        or DataFormats.LocaleConstant
+        or DataFormats.PenDataConstant
+        or DataFormats.RiffConstant
+        or DataFormats.SymbolicLinkConstant
+        or DataFormats.TiffConstant
+        or DataFormats.WaveAudioConstant
+        or DataFormats.BitmapConstant
+        or DataFormats.EmfConstant
+        or DataFormats.PaletteConstant
+        or DataFormats.WmfConstant
+        or DataFormats.TextConstant
+        or DataFormats.UnicodeTextConstant
+        or DataFormats.RtfConstant
+        or DataFormats.HtmlConstant
+        or DataFormats.OemTextConstant
+        or DataFormats.FileDropConstant
+        or CF_DEPRECATED_FILENAME
+        or CF_DEPRECATED_FILENAMEW;
 
     private static string ConvertToDataFormats(TextDataFormat format) => format switch
     {
