@@ -4,3 +4,7 @@ Overridable Microsoft.VisualBasic.ApplicationServices.StartupEventHandler.Invoke
 Overridable Microsoft.VisualBasic.ApplicationServices.StartupNextInstanceEventHandler.Invoke(sender As Object, e As Microsoft.VisualBasic.ApplicationServices.StartupNextInstanceEventArgs) -> Void
 Overridable Microsoft.VisualBasic.ApplicationServices.UnhandledExceptionEventHandler.Invoke(sender As Object, e As Microsoft.VisualBasic.ApplicationServices.UnhandledExceptionEventArgs) -> Void
 Overridable Microsoft.VisualBasic.Devices.NetworkAvailableEventHandler.Invoke(sender As Object, e As Microsoft.VisualBasic.Devices.NetworkAvailableEventArgs) -> Void
+Microsoft.VisualBasic.MyServices.ClipboardProxy.SetDataAsJson(Of T)(data As T) -> Void
+Microsoft.VisualBasic.MyServices.ClipboardProxy.TryGetData(Of T)(ByRef data As T) -> Boolean
+Microsoft.VisualBasic.MyServices.ClipboardProxy.TryGetData(Of T)(format As String, ByRef data As T) -> Boolean
+Microsoft.VisualBasic.MyServices.ClipboardProxy.TryGetData(Of T)(format As String, resolver As System.Func(Of System.Reflection.Metadata.TypeName, System.Type), ByRef data As T) -> Boolean

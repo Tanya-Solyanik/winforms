@@ -5,6 +5,7 @@
 
 using System.ComponentModel;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.Serialization.Formatters.Binary;
 
 namespace System.Windows.Forms.BinaryFormat.Tests;
@@ -109,6 +110,26 @@ public class WinFormsBinaryFormattedObjectTests
         newList.Images.Count.Should().Be(1);
         Bitmap newImage = (Bitmap)newList.Images[0];
         newImage.Size.Should().Be(sourceList.Images[0].Size);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains()
+    {
+        Point point = new() { X = 1, Y = 1 };
+        BinaryFormattedObject format = point.SerializeAndParse();
+        format.Contains<Point>().Should().BeTrue();
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_GetRootTypeName()
+    {
+        Point point = new() { X = 1, Y = 1 };
+        BinaryFormattedObject format = point.SerializeAndParse();
+        TypeName typeName = format.GetRootTypeName();
+
+        typeName.FullName.Should().Be(typeof(Point).FullName);
+        // Formatter used the old, "forwarded from" assembly name.
+        typeName.AssemblyName!.Name.Should().Be("System.Drawing");
     }
 
     [Theory]

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices.ComTypes;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
@@ -33,6 +34,13 @@ public unsafe partial class DataObject
         private readonly Com.IDataObject.Interface _nativeDataObject;
         private readonly ComTypes.IDataObject _runtimeDataObject;
 
+        // Feature switch, when set to false, BinaryFormatter is not supported in trimmed applications.
+        // This field, using the default BinaryFormatter switch, is used to control trim warnings related to using BinaryFormatter in WinForms trimming.
+        // The trimmer will generate a warning when set to true and will not generate a warning when set to false.
+        [FeatureSwitchDefinition("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization")]
+        internal static bool EnableUnsafeBinaryFormatterInNativeObjectSerialization =>
+            !AppContext.TryGetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", out bool isEnabled) || isEnabled;
+
         private ComposedDataObject(IDataObject winFormsDataObject, Com.IDataObject.Interface nativeDataObject, ComTypes.IDataObject runtimeDataObject)
         {
             _winFormsDataObject = winFormsDataObject;
@@ -51,20 +59,20 @@ public unsafe partial class DataObject
             return new(winFormsDataObject, winFormsToNative, nativeToRuntime);
         }
 
-        public static ComposedDataObject CreateFromNativeDataObject(Com.IDataObject* nativeDataObject)
+        public static ComposedDataObject CreateFromNativeDataObject(Com.IDataObject* nativeDataObject, bool legacyCompatMode = false)
         {
             // Add ref so each adapter can take ownership of the native data object.
             nativeDataObject->AddRef();
             nativeDataObject->AddRef();
-            NativeDataObjectToWinFormsAdapter nativeToWinForms = new(nativeDataObject);
+            NativeDataObjectToWinFormsAdapter nativeToWinForms = new(nativeDataObject, legacyCompatMode);
             NativeDataObjectToRuntimeAdapter nativeToRuntime = new(nativeDataObject);
             return new(nativeToWinForms, nativeToWinForms, nativeToRuntime);
         }
 
-        public static ComposedDataObject CreateFromRuntimeDataObject(ComTypes.IDataObject runtimeDataObject)
+        public static ComposedDataObject CreateFromRuntimeDataObject(ComTypes.IDataObject runtimeDataObject, bool legacyCompatMode = false)
         {
             RuntimeDataObjectToNativeAdapter runtimeToNative = new(runtimeDataObject);
-            NativeDataObjectToWinFormsAdapter nativeToWinForms = new(ComHelpers.GetComPointer<Com.IDataObject>(runtimeToNative));
+            NativeDataObjectToWinFormsAdapter nativeToWinForms = new(ComHelpers.GetComPointer<Com.IDataObject>(runtimeToNative), legacyCompatMode);
             return new(nativeToWinForms, runtimeToNative, runtimeDataObject);
         }
 
@@ -99,6 +107,28 @@ public unsafe partial class DataObject
         object? IDataObject.GetData(string format, bool autoConvert) => _winFormsDataObject.GetData(format, autoConvert);
         object? IDataObject.GetData(string format) => _winFormsDataObject.GetData(format);
         object? IDataObject.GetData(Type format) => _winFormsDataObject.GetData(format);
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            Func<TypeName, Type> resolver,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            _winFormsDataObject.TryGetData(format, resolver, autoConvert, out data);
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            _winFormsDataObject.TryGetData(format, Clipboard.NotSupportedResolver, autoConvert, out data);
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            _winFormsDataObject.TryGetData(format, Clipboard.NotSupportedResolver, autoConvert: false, out data);
+
+        bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            _winFormsDataObject.TryGetData(typeof(T).FullName!, Clipboard.NotSupportedResolver, autoConvert: false, out data);
+
         bool IDataObject.GetDataPresent(string format, bool autoConvert) => _winFormsDataObject.GetDataPresent(format, autoConvert);
         bool IDataObject.GetDataPresent(string format) => _winFormsDataObject.GetDataPresent(format);
         bool IDataObject.GetDataPresent(Type format) => _winFormsDataObject.GetDataPresent(format);

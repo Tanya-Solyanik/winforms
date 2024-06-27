@@ -4,6 +4,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Serialization;
@@ -18,7 +19,7 @@ namespace System.Windows.Forms.Tests;
 // NB: doesn't require thread affinity
 public partial class DataObjectTests
 {
-    private static readonly string[] s_clipboardFormats =
+    private static readonly string[] s_restrictedClipboardFormats =
     [
         DataFormats.CommaSeparatedValue,
         DataFormats.Dib,
@@ -39,15 +40,18 @@ public partial class DataObjectTests
         DataFormats.Rtf,
         DataFormats.Text,
         DataFormats.UnicodeText,
-        DataFormats.Serializable,
-        "something custom",
+        "FileName",
+        "FileNameW",
+        "System.Drawing.Bitmap",
+        "  ",  // these return null and don't process the payload.
+        string.Empty,
+        null
     ];
 
-    private static readonly string[] s_mappedFormats =
+    private static readonly string[] s_unboundedClipboardFormats =
     [
-        typeof(Bitmap).FullName,
-        "FileName",
-        "FileNameW"
+        DataFormats.Serializable,
+        "something custom"
     ];
 
     [Fact]
@@ -227,29 +231,16 @@ public partial class DataObjectTests
         mockDataObject.Verify(o => o.GetData(DataFormats.WaveAudio, false), Times.Once());
     }
 
-    public static IEnumerable<object[]> GetData_String_TestData()
-    {
-        foreach (string format in s_clipboardFormats)
-        {
-            yield return new object[] { format };
-        }
-
-        foreach (string format in s_mappedFormats)
-        {
-            yield return new object[] { format };
-        }
-
-        yield return new object[] { "  " };
-        yield return new object[] { string.Empty };
-        yield return new object[] { null };
-    }
+    public static TheoryData GetData_String_TheoryData() => s_restrictedClipboardFormats.ToTheoryData();
+    public static TheoryData GetData_String_UnboundedFormat_TheoryData() => s_unboundedClipboardFormats.ToTheoryData();
 
     [Theory]
-    [MemberData(nameof(GetData_String_TestData))]
+    [MemberData(nameof(GetData_String_TheoryData))]
+    [MemberData(nameof(GetData_String_UnboundedFormat_TheoryData))]
     public void DataObject_GetData_InvokeStringDefault_ReturnsNull(string format)
     {
         DataObject dataObject = new();
-        Assert.Null(dataObject.GetData(format));
+        dataObject.GetData(format).Should().BeNull();
     }
 
     public static IEnumerable<object[]> GetData_InvokeStringMocked_TestData()
@@ -304,32 +295,37 @@ public partial class DataObjectTests
         mockDataObject.Verify(o => o.GetData(format, true), Times.Once());
     }
 
-    public static IEnumerable<object[]> GetData_StringBool_TestData()
+    public static TheoryData<string, bool> GetData_StringBool_TheoryData()
     {
-        foreach (bool autoConvert in new bool[] { true, false })
+        TheoryData<string, bool> theoryData = new();
+        foreach (string format in s_restrictedClipboardFormats)
         {
-            foreach (string format in s_clipboardFormats)
-            {
-                yield return new object[] { format, autoConvert };
-            }
-
-            foreach (string format in s_mappedFormats)
-            {
-                yield return new object[] { format, autoConvert };
-            }
-
-            yield return new object[] { "  ", autoConvert };
-            yield return new object[] { string.Empty, autoConvert };
-            yield return new object[] { null, autoConvert };
+            theoryData.Add(format, false);
+            theoryData.Add(format, true);
         }
+
+        return theoryData;
+    }
+
+    public static TheoryData<string, bool> GetData_StringBool_Unbounded_TheoryData()
+    {
+        TheoryData<string, bool> theoryData = new();
+        foreach (string format in s_unboundedClipboardFormats)
+        {
+            theoryData.Add(format, false);
+            theoryData.Add(format, true);
+        }
+
+        return theoryData;
     }
 
     [Theory]
-    [MemberData(nameof(GetData_StringBool_TestData))]
+    [MemberData(nameof(GetData_StringBool_TheoryData))]
+    [MemberData(nameof(GetData_StringBool_Unbounded_TheoryData))]
     public void DataObject_GetData_InvokeStringBoolDefault_ReturnsNull(string format, bool autoConvert)
     {
         DataObject dataObject = new();
-        Assert.Null(dataObject.GetData(format, autoConvert));
+        dataObject.GetData(format, autoConvert).Should().BeNull();
     }
 
     public static IEnumerable<object[]> GetData_StringBoolIDataObject_TestData()
@@ -369,6 +365,58 @@ public partial class DataObjectTests
         Assert.Null(dataObject.GetData(format));
     }
 
+    [Fact]
+    public void DataObject_TryGetData_InvokeInt_CallsTryGetData()
+    {
+        int data = 101;
+        Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
+        mockDataObject
+            .Setup(o => o.TryGetData(out data))
+            .CallBase();
+        string formatName = typeof(int).FullName!;
+        mockDataObject
+            .Setup(o => o.TryGetData(formatName, out data))
+            .Returns(true)
+            .Verifiable();
+        mockDataObject.Object.TryGetData(out data).Should().BeTrue();
+        mockDataObject.Verify(o => o.TryGetData(formatName, out data), Times.Exactly(1));
+    }
+
+    [Fact]
+    public void DataObject_TryGetData_InvokeStringInt_CallsTryGetData()
+    {
+        int data = 101;
+        Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
+        mockDataObject
+            .Setup(o => o.TryGetData("test format", out data))
+            .CallBase();
+        mockDataObject
+            .Setup(o => o.TryGetData("test format", false, out data))
+            .Returns(true)
+            .Verifiable();
+        mockDataObject.Object.TryGetData("test format", out data).Should().BeTrue();
+        mockDataObject.Verify(o => o.TryGetData("test format", false, out data), Times.Exactly(1));
+    }
+
+    [Theory]
+    [BoolData]
+    public void DataObject_TryGetData_InvokeStringBoolString_CallsTryGetData(bool autoConvert)
+    {
+        string data = "text";
+        Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
+        mockDataObject
+            .Setup(o => o.TryGetData("test format", autoConvert, out data))
+            .CallBase();
+        mockDataObject
+            .Setup(o => o.TryGetData("test format", NotSupportedResolver, autoConvert, out data))
+            .Returns(true)
+            .Verifiable();
+        mockDataObject.Object.TryGetData("test format", autoConvert, out data).Should().BeTrue();
+        mockDataObject.Verify(o => o.TryGetData("test format", NotSupportedResolver, autoConvert, out data), Times.Exactly(1));
+    }
+
+    private static Type NotSupportedResolver(TypeName typeName) => throw new NotSupportedException();
+
     public static IEnumerable<object[]> GetData_InvokeTypeMocked_TestData()
     {
         foreach (object result in new object[] { new(), null })
@@ -395,25 +443,9 @@ public partial class DataObjectTests
         mockDataObject.Verify(o => o.GetData(formatName), Times.Exactly(expectedCallCount));
     }
 
-    public static IEnumerable<object[]> GetDataPresent_String_TestData()
-    {
-        foreach (string format in s_clipboardFormats)
-        {
-            yield return new object[] { format };
-        }
-
-        foreach (string format in s_mappedFormats)
-        {
-            yield return new object[] { format };
-        }
-
-        yield return new object[] { "  " };
-        yield return new object[] { string.Empty };
-        yield return new object[] { null };
-    }
-
     [Theory]
-    [MemberData(nameof(GetDataPresent_String_TestData))]
+    [MemberData(nameof(GetData_String_TheoryData))]
+    [MemberData(nameof(GetData_String_UnboundedFormat_TheoryData))]
     public void DataObject_GetDataPresent_InvokeStringDefault_ReturnsFalse(string format)
     {
         DataObject dataObject = new();
@@ -472,28 +504,27 @@ public partial class DataObjectTests
         mockDataObject.Verify(o => o.GetDataPresent(format, true), Times.Once());
     }
 
-    public static IEnumerable<object[]> GetDataPresent_StringBool_TestData()
+    public static TheoryData<string, bool> GetDataPresent_StringBool_TheoryData()
     {
+        TheoryData<string, bool> theoryData = new();
         foreach (bool autoConvert in new bool[] { true, false })
         {
-            foreach (string format in s_clipboardFormats)
+            foreach (string format in s_restrictedClipboardFormats)
             {
-                yield return new object[] { format, autoConvert };
+                theoryData.Add(format, autoConvert);
             }
 
-            foreach (string format in s_mappedFormats)
+            foreach (string format in s_unboundedClipboardFormats)
             {
-                yield return new object[] { format, autoConvert };
+                theoryData.Add(format, autoConvert);
             }
-
-            yield return new object[] { "  ", autoConvert };
-            yield return new object[] { string.Empty, autoConvert };
-            yield return new object[] { null, autoConvert };
         }
+
+        return theoryData;
     }
 
     [Theory]
-    [MemberData(nameof(GetDataPresent_StringBool_TestData))]
+    [MemberData(nameof(GetDataPresent_StringBool_TheoryData))]
     public void DataObject_GetDataPresent_InvokeStringBoolDefault_ReturnsFalse(string format, bool autoConvert)
     {
         DataObject dataObject = new();
@@ -994,23 +1025,24 @@ public partial class DataObjectTests
         Assert.Throws<ArgumentNullException>("audioStream", () => dataObject.SetAudio((Stream)null));
     }
 
-    public static IEnumerable<object[]> SetData_Object_TestData()
+    public static TheoryData<object, string> SetData_Object_TheoryData() => new()
     {
-        yield return new object[] { new(), typeof(object).FullName };
-        yield return new object[] { new Bitmap(10, 10), typeof(Bitmap).FullName };
-        yield return new object[] { new Mock<ISerializable>(MockBehavior.Strict).Object, DataFormats.Serializable };
-    }
+        { new(), typeof(object).FullName },
+        { new Bitmap(10, 10), typeof(Bitmap).FullName },
+        { new Mock<ISerializable>(MockBehavior.Strict).Object, DataFormats.Serializable }
+    };
 
     [Theory]
-    [MemberData(nameof(SetData_Object_TestData))]
-    public void SetData_Object_GetDataReturnsExpected(object data, string expectedFormat)
+    [MemberData(nameof(SetData_Object_TheoryData))]
+    public void DataObject_SetData_Object_GetDataReturnsExpected(object data, string format)
     {
         DataObject dataObject = new();
         dataObject.SetData(data);
-        Assert.Same(data, dataObject.GetData(expectedFormat, autoConvert: false));
-        Assert.Same(data, dataObject.GetData(expectedFormat, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(expectedFormat, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(expectedFormat, autoConvert: false));
+
+        dataObject.GetData(format, autoConvert: false).Should().BeSameAs(data);
+        dataObject.GetData(format, autoConvert: true).Should().BeSameAs(data);
+        dataObject.GetDataPresent(format, autoConvert: false).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
     }
 
     [Fact]
@@ -1018,14 +1050,16 @@ public partial class DataObjectTests
     {
         object data1 = new();
         object data2 = new();
-
         DataObject dataObject = new();
         dataObject.SetData(data1);
         dataObject.SetData(data2);
-        Assert.Same(data2, dataObject.GetData(data1.GetType().FullName, autoConvert: false));
-        Assert.Same(data2, dataObject.GetData(data1.GetType().FullName, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(data1.GetType().FullName, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(data1.GetType().FullName, autoConvert: false));
+        string format = data1.GetType().FullName;
+
+        dataObject.GetData(format, autoConvert: false).Should().Be(data2);
+        dataObject.GetData(format, autoConvert: true).Should().Be(data2);
+
+        dataObject.GetDataPresent(format, autoConvert: false).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
     }
 
     [Fact]
@@ -1033,18 +1067,19 @@ public partial class DataObjectTests
     {
         var data1 = new Mock<ISerializable>(MockBehavior.Strict).Object;
         var data2 = new Mock<ISerializable>(MockBehavior.Strict).Object;
-
         DataObject dataObject = new();
         dataObject.SetData(data1);
         dataObject.SetData(data2);
-        Assert.Same(data1, dataObject.GetData(DataFormats.Serializable, autoConvert: false));
-        Assert.Same(data1, dataObject.GetData(DataFormats.Serializable, autoConvert: true));
-        Assert.Same(data2, dataObject.GetData(data2.GetType().FullName, autoConvert: false));
-        Assert.Same(data2, dataObject.GetData(data2.GetType().FullName, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(DataFormats.Serializable, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(DataFormats.Serializable, autoConvert: false));
-        Assert.True(dataObject.GetDataPresent(data2.GetType().FullName, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(data2.GetType().FullName, autoConvert: false));
+
+        dataObject.GetData(DataFormats.Serializable, autoConvert: false).Should().Be(data1);
+        dataObject.GetData(DataFormats.Serializable, autoConvert: true).Should().Be(data1);
+        dataObject.GetData(data2.GetType().FullName, autoConvert: false).Should().Be(data2);
+        dataObject.GetData(data2.GetType().FullName, autoConvert: true).Should().Be(data2);
+
+        dataObject.GetDataPresent(DataFormats.Serializable, autoConvert: false).Should().BeTrue();
+        dataObject.GetDataPresent(DataFormats.Serializable, autoConvert: true).Should().BeTrue();
+        dataObject.GetDataPresent(data2.GetType().FullName, autoConvert: false).Should().BeTrue();
+        dataObject.GetDataPresent(data2.GetType().FullName, autoConvert: true).Should().BeTrue();
     }
 
     public static IEnumerable<object[]> SetData_ObjectIDataObject_TestData()
@@ -1073,45 +1108,117 @@ public partial class DataObjectTests
         Assert.Throws<ArgumentNullException>("data", () => dataObject.SetData(null));
     }
 
-    public static IEnumerable<object[]> SetData_StringObject_TestData()
+    public static TheoryData<string, string, bool, bool> SetData_StringObject_TheoryData()
     {
-        foreach (string format in s_clipboardFormats)
+        TheoryData<string, string, bool, bool> theoryData = new();
+        foreach (string format in s_restrictedClipboardFormats)
         {
-            yield return new object[] { format, null, format == DataFormats.FileDrop, format == DataFormats.Bitmap };
-            yield return new object[] { format, "input", format == DataFormats.FileDrop, format == DataFormats.Bitmap };
+            if (string.IsNullOrWhiteSpace(format) || format == typeof(Bitmap).FullName || format.StartsWith("FileName", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            theoryData.Add(format, null, format == DataFormats.FileDrop, format == DataFormats.Bitmap);
+            theoryData.Add(format, "input", format == DataFormats.FileDrop, format == DataFormats.Bitmap);
         }
 
-        yield return new object[] { typeof(Bitmap).FullName, null, false, true };
-        yield return new object[] { typeof(Bitmap).FullName, "input", false, true };
+        theoryData.Add(typeof(Bitmap).FullName, null, false, true);
+        theoryData.Add(typeof(Bitmap).FullName, "input", false, true);
 
-        yield return new object[] { "FileName", null, true, false };
-        yield return new object[] { "FileName", "input", true, false };
+        theoryData.Add("FileName", null, true, false);
+        theoryData.Add("FileName", "input", true, false);
 
-        yield return new object[] { "FileNameW", null, true, false };
-        yield return new object[] { "FileNameW", "input", true, false };
+        theoryData.Add("FileNameW", null, true, false);
+        theoryData.Add("FileNameW", "input", true, false);
+
+        return theoryData;
     }
 
     [Theory]
-    [MemberData(nameof(SetData_StringObject_TestData))]
-    private void DataObject_SetData_InvokeStringObject_GetReturnsExpected(string format, object input, bool expectedContainsFileDropList, bool expectedContainsImage)
+    [MemberData(nameof(SetData_StringObject_TheoryData))]
+    private void DataObject_SetData_InvokeStringObject_GetReturnsExpected(string format, string input, bool expectedContainsFileDropList, bool expectedContainsImage)
     {
         DataObject dataObject = new();
         dataObject.SetData(format, input);
-        Assert.True(dataObject.GetDataPresent(format));
-        Assert.True(dataObject.GetDataPresent(format, autoConvert: false));
-        Assert.True(dataObject.GetDataPresent(format, autoConvert: true));
-        Assert.Same(input, dataObject.GetData(format));
-        Assert.Same(input, dataObject.GetData(format, autoConvert: false));
-        Assert.Same(input, dataObject.GetData(format, autoConvert: true));
-        Assert.Equal(format == DataFormats.WaveAudio, dataObject.ContainsAudio());
-        Assert.Equal(expectedContainsFileDropList, dataObject.ContainsFileDropList());
-        Assert.Equal(expectedContainsImage, dataObject.ContainsImage());
-        Assert.Equal(format == DataFormats.UnicodeText, dataObject.ContainsText());
-        Assert.Equal(format == DataFormats.UnicodeText, dataObject.ContainsText(TextDataFormat.Text));
-        Assert.Equal(format == DataFormats.UnicodeText, dataObject.ContainsText(TextDataFormat.UnicodeText));
-        Assert.Equal(format == DataFormats.Rtf, dataObject.ContainsText(TextDataFormat.Rtf));
-        Assert.Equal(format == DataFormats.Html, dataObject.ContainsText(TextDataFormat.Html));
-        Assert.Equal(format == DataFormats.CommaSeparatedValue, dataObject.ContainsText(TextDataFormat.CommaSeparatedValue));
+
+        dataObject.GetDataPresent(format).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: false).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
+
+        dataObject.GetData(format).Should().Be(input);
+        dataObject.GetData(format, autoConvert: false).Should().Be(input);
+        dataObject.GetData(format, autoConvert: true).Should().Be(input);
+
+        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+
+        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+
+        dataObject.TryGetData(format, StringResolver, autoConvert: true, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, StringResolver, autoConvert: false, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+
+        dataObject.ContainsAudio().Should().Be(format == DataFormats.WaveAudio);
+        dataObject.ContainsFileDropList().Should().Be(expectedContainsFileDropList);
+        dataObject.ContainsImage().Should().Be(expectedContainsImage);
+        dataObject.ContainsText().Should().Be(format == DataFormats.UnicodeText);
+        dataObject.ContainsText(TextDataFormat.Text).Should().Be(format == DataFormats.UnicodeText);
+        dataObject.ContainsText(TextDataFormat.UnicodeText).Should().Be(format == DataFormats.UnicodeText);
+        dataObject.ContainsText(TextDataFormat.Rtf).Should().Be(format == DataFormats.Rtf);
+        dataObject.ContainsText(TextDataFormat.Html).Should().Be(format == DataFormats.Html);
+        dataObject.ContainsText(TextDataFormat.CommaSeparatedValue).Should().Be(format == DataFormats.CommaSeparatedValue);
+    }
+
+    [Theory]
+    [InlineData(DataFormats.SerializableConstant, null)]
+    [InlineData(DataFormats.SerializableConstant, "input")]
+    [InlineData("something custom", null)]
+    [InlineData("something custom", "input")]
+    private void DataObject_SetData_InvokeStringObject_Unbounded_GetReturnsExpected(string format, string input)
+    {
+        DataObject dataObject = new();
+        dataObject.SetData(format, input);
+
+        dataObject.GetDataPresent(format).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: false).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
+
+        dataObject.GetData(format).Should().Be(input);
+        dataObject.GetData(format, autoConvert: false).Should().Be(input);
+        dataObject.GetData(format, autoConvert: true).Should().Be(input);
+
+        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is string);
+
+        dataObject.TryGetData(format, StringResolver, autoConvert: false, out unboundedData).Should().Be(input is not null);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, StringResolver, autoConvert: true, out unboundedData).Should().Be(input is not null);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out string data).Should().Be(input is not null);
+        data.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out data).Should().Be(input is not null);
+        data.Should().Be(input);
+
+        dataObject.ContainsAudio().Should().BeFalse();
+        dataObject.ContainsFileDropList().Should().BeFalse();
+        dataObject.ContainsImage().Should().BeFalse();
+        dataObject.ContainsText().Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.Text).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.UnicodeText).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.Rtf).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.Html).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.CommaSeparatedValue).Should().BeFalse();
     }
 
     [Fact]
@@ -1159,52 +1266,145 @@ public partial class DataObjectTests
         mockDataObject.Verify(o => o.SetData(format, data), Times.Once());
     }
 
-    public static IEnumerable<object[]> SetData_StringBoolObject_TestData()
+    public static TheoryData<string, bool, string, bool, bool> SetData_StringBoolObject_TheoryData()
     {
-        foreach (string format in s_clipboardFormats)
+        TheoryData<string, bool, string, bool, bool> theoryData = new();
+
+        foreach (string format in s_restrictedClipboardFormats)
         {
+            if (string.IsNullOrWhiteSpace(format) || format == typeof(Bitmap).FullName || format.StartsWith("FileName", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             foreach (bool autoConvert in new bool[] { true, false })
             {
-                yield return new object[] { format, autoConvert, null, format == DataFormats.FileDrop, format == DataFormats.Bitmap };
-                yield return new object[] { format, autoConvert, "input", format == DataFormats.FileDrop, format == DataFormats.Bitmap };
+                theoryData.Add(format, autoConvert, null, format == DataFormats.FileDrop, format == DataFormats.Bitmap);
+                theoryData.Add(format, autoConvert, "input", format == DataFormats.FileDrop, format == DataFormats.Bitmap);
             }
         }
 
-        yield return new object[] { typeof(Bitmap).FullName, false, null, false, false };
-        yield return new object[] { typeof(Bitmap).FullName, false, "input", false, false };
-        yield return new object[] { typeof(Bitmap).FullName, true, null, false, true };
-        yield return new object[] { typeof(Bitmap).FullName, true, "input", false, true };
+        theoryData.Add(typeof(Bitmap).FullName, false, null, false, false);
+        theoryData.Add(typeof(Bitmap).FullName, false, "input", false, false);
+        theoryData.Add(typeof(Bitmap).FullName, true, null, false, true);
+        theoryData.Add(typeof(Bitmap).FullName, true, "input", false, true);
 
-        yield return new object[] { "FileName", false, null, false, false };
-        yield return new object[] { "FileName", false, "input", false, false };
-        yield return new object[] { "FileName", true, null, true, false };
-        yield return new object[] { "FileName", true, "input", true, false };
+        theoryData.Add("FileName", false, null, false, false);
+        theoryData.Add("FileName", false, "input", false, false);
+        theoryData.Add("FileName", true, null, true, false);
+        theoryData.Add("FileName", true, "input", true, false);
 
-        yield return new object[] { "FileNameW", false, null, false, false };
-        yield return new object[] { "FileNameW", false, "input", false, false };
-        yield return new object[] { "FileNameW", true, null, true, false };
-        yield return new object[] { "FileNameW", true, "input", true, false };
+        theoryData.Add("FileNameW", false, null, false, false);
+        theoryData.Add("FileNameW", false, "input", false, false);
+        theoryData.Add("FileNameW", true, null, true, false);
+        theoryData.Add("FileNameW", true, "input", true, false);
+
+        return theoryData;
     }
 
     [Theory]
-    [MemberData(nameof(SetData_StringBoolObject_TestData))]
-    private void DataObject_SetData_InvokeStringBoolObject_GetReturnsExpected(string format, bool autoConvert, object input, bool expectedContainsFileDropList, bool expectedContainsImage)
+    [MemberData(nameof(SetData_StringBoolObject_TheoryData))]
+    private void DataObject_SetData_InvokeStringBoolObject_GetReturnsExpected(string format, bool autoConvert, string input, bool expectedContainsFileDropList, bool expectedContainsImage)
     {
         DataObject dataObject = new();
         dataObject.SetData(format, autoConvert, input);
-        Assert.Same(input, dataObject.GetData(format, autoConvert: false));
-        Assert.Same(input, dataObject.GetData(format, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(format, autoConvert: true));
-        Assert.True(dataObject.GetDataPresent(format, autoConvert: false));
-        Assert.Equal(format == DataFormats.WaveAudio, dataObject.ContainsAudio());
-        Assert.Equal(expectedContainsFileDropList, dataObject.ContainsFileDropList());
-        Assert.Equal(expectedContainsImage, dataObject.ContainsImage());
-        Assert.Equal(format == DataFormats.UnicodeText, dataObject.ContainsText());
-        Assert.Equal(format == DataFormats.UnicodeText, dataObject.ContainsText(TextDataFormat.Text));
-        Assert.Equal(format == DataFormats.UnicodeText, dataObject.ContainsText(TextDataFormat.UnicodeText));
-        Assert.Equal(format == DataFormats.Rtf, dataObject.ContainsText(TextDataFormat.Rtf));
-        Assert.Equal(format == DataFormats.Html, dataObject.ContainsText(TextDataFormat.Html));
-        Assert.Equal(format == DataFormats.CommaSeparatedValue, dataObject.ContainsText(TextDataFormat.CommaSeparatedValue));
+
+        dataObject.GetData(format, autoConvert: false).Should().Be(input);
+        dataObject.GetData(format, autoConvert: true).Should().Be(input);
+
+        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+
+        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+
+        dataObject.TryGetData(format, StringResolver, autoConvert: false, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, StringResolver, autoConvert: true, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is string);
+        unboundedData.Should().Be(input);
+
+        dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: false).Should().BeTrue();
+
+        dataObject.ContainsAudio().Should().Be(format == DataFormats.WaveAudio);
+        dataObject.ContainsFileDropList().Should().Be(expectedContainsFileDropList);
+        dataObject.ContainsImage().Should().Be(expectedContainsImage);
+        dataObject.ContainsText().Should().Be(format == DataFormats.UnicodeText);
+        dataObject.ContainsText(TextDataFormat.Text).Should().Be(format == DataFormats.UnicodeText);
+        dataObject.ContainsText(TextDataFormat.UnicodeText).Should().Be(format == DataFormats.UnicodeText);
+        dataObject.ContainsText(TextDataFormat.Rtf).Should().Be(format == DataFormats.Rtf);
+        dataObject.ContainsText(TextDataFormat.Html).Should().Be(format == DataFormats.Html);
+        dataObject.ContainsText(TextDataFormat.CommaSeparatedValue).Should().Be(format == DataFormats.CommaSeparatedValue);
+    }
+
+    private static Type StringResolver(TypeName typeName)
+    {
+        Type type = typeof(string);
+        TypeName parsed = TypeName.Parse($"{type.FullName}, {type.Assembly.FullName}");
+
+        // Namespace-qualified type name.
+        if (typeName.FullName == parsed.FullName
+            // Ignore version, culture, and public key token in the assembly name.
+            && typeName.AssemblyName?.Name == parsed.AssemblyName?.Name)
+        {
+            return type;
+        }
+
+        throw new NotSupportedException($"Unexpected type {typeName.AssemblyQualifiedName}.");
+    }
+
+    [Theory]
+    [InlineData("something custom", false, "input")]
+    [InlineData("something custom", false, null)]
+    [InlineData("something custom", true, "input")]
+    [InlineData("something custom", true, null)]
+    [InlineData(DataFormats.SerializableConstant, false, "input")]
+    [InlineData(DataFormats.SerializableConstant, false, null)]
+    [InlineData(DataFormats.SerializableConstant, true, "input")]
+    [InlineData(DataFormats.SerializableConstant, true, null)]
+    private void DataObject_SetData_InvokeStringBoolObject_Unbounded(string format, bool autoConvert, string input)
+    {
+        DataObject dataObject = new();
+        dataObject.SetData(format, autoConvert, input);
+
+        dataObject.GetData(format, autoConvert: false).Should().Be(input);
+        dataObject.GetData(format, autoConvert: true).Should().Be(input);
+
+        dataObject.TryGetData(format, out string data).Should().Be(input is string);
+        data.Should().Be(input);
+
+        dataObject.TryGetData(format, autoConvert: false, out data).Should().Be(input is string);
+        data.Should().Be(input);
+        dataObject.TryGetData(format, autoConvert: true, out data).Should().Be(input is string);
+        data.Should().Be(input);
+
+        dataObject.TryGetData(format, StringResolver, autoConvert: false, out data).Should().Be(input is string);
+        data.Should().Be(input);
+        dataObject.TryGetData(format, StringResolver, autoConvert: true, out data).Should().Be(input is string);
+        data.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out data).Should().Be(input is string);
+        data.Should().Be(input);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out data).Should().Be(input is string);
+        data.Should().Be(input);
+
+        dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
+        dataObject.GetDataPresent(format, autoConvert: false).Should().BeTrue();
+
+        dataObject.ContainsAudio().Should().Be(format == DataFormats.WaveAudio);
+        dataObject.ContainsFileDropList().Should().BeFalse();
+        dataObject.ContainsImage().Should().BeFalse();
+        dataObject.ContainsText().Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.Text).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.UnicodeText).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.Rtf).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.Html).Should().BeFalse();
+        dataObject.ContainsText(TextDataFormat.CommaSeparatedValue).Should().BeFalse();
     }
 
     [Fact]
@@ -2436,6 +2636,10 @@ public partial class DataObjectTests
         public object GetData(string format, bool autoConvert) => throw new NotImplementedException();
         public object GetData(string format) => throw new NotImplementedException();
         public object GetData(Type format) => throw new NotImplementedException();
+        public bool TryGetData<T>(string format, Func<TypeName, Type> resolver, bool autoConvert, out T data) => throw new NotImplementedException();
+        public bool TryGetData<T>(string format, bool autoConvert, out T data) => throw new NotImplementedException();
+        public bool TryGetData<T>(string format, out T data) => throw new NotImplementedException();
+        public bool TryGetData<T>(out T data) => throw new NotImplementedException();
         public void GetDataHere(ref FORMATETC format, ref STGMEDIUM medium) => throw new NotImplementedException();
         public bool GetDataPresent(string format, bool autoConvert) => throw new NotImplementedException();
         public bool GetDataPresent(string format) => throw new NotImplementedException();
