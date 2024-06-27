@@ -5,6 +5,7 @@
 
 using System.ComponentModel;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.Serialization.Formatters.Binary;
 
 namespace System.Windows.Forms.BinaryFormat.Tests;
@@ -109,6 +110,177 @@ public class WinFormsBinaryFormattedObjectTests
         newList.Images.Count.Should().Be(1);
         Bitmap newImage = (Bitmap)newList.Images[0];
         newImage.Size.Should().Be(sourceList.Images[0].Size);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_int()
+    {
+        int data = 101;
+        BinaryFormattedObject_Contains(data, null);
+
+        int? data1 = 101;
+        BinaryFormattedObject_Contains(data1, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_intArray()
+    {
+        int[] data = { 101, 202, 303 };
+        BinaryFormattedObject_Contains(data, null);
+
+        int?[] data1 = { 101, 202, 303 };
+        BinaryFormattedObject_Contains(data1, null);
+
+        int[,] multidimensional = new int[3, 2]
+        {
+            {1,2},
+            {2,3},
+            {4,5}
+        };
+        BinaryFormattedObject_Contains(multidimensional, null);
+
+        int[][] jagged =
+        [
+            [1, 2, 3, 4],
+            [5, 6, 7, 8, 9],
+            [10, 11, 12],
+        ];
+        BinaryFormattedObject_Contains(jagged, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_string()
+    {
+        string data = "text";
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_stringArray()
+    {
+        string[] data = { "text1", "text2", "text3" };
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_Bitmap()
+    {
+        using Bitmap data = new Bitmap(10, 10);
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_BitmapArray()
+    {
+        using Bitmap bitmap1 = new(16, 16);
+        using Bitmap bitmap2 = new(10, 10);
+        Bitmap[] data = { bitmap1, bitmap2 };
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_MemoryStream()
+    {
+        using MemoryStream data = new MemoryStream([101, 102]);
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_Stream()
+    {
+        using Stream data = new MemoryStream([101, 102]);
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_DayOfWeek()
+    {
+        DayOfWeek data = DayOfWeek.Sunday;
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_Color()
+    {
+        Color data = Color.Red;
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    [Theory]
+    [MemberData(nameof(Object_TestData))]
+    public void BinaryFormattedObject_Contains_object(object data)
+    {
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    public static TheoryData<object> Object_TestData() => new()
+    {
+        null!,
+        new(),
+        "text"
+    };
+
+    // TanyaSo: tests with a resolver TestData[]
+
+    [Theory]
+    [MemberData(nameof(ObjectArray_TestData))]
+    public void BinaryFormattedObject_Contains_objectArray(object[] data)
+    {
+        BinaryFormattedObject_Contains(data, null);
+    }
+
+    public static TheoryData<object[]> ObjectArray_TestData() => new()
+    {
+        new object[] { null! },
+        new object[] { new() },
+        new object[] { "text" }
+    };
+
+    private static void BinaryFormattedObject_Contains<T>(T data, string? forwardedAssemblyName)
+    {
+        BinaryFormattedObject format = data.SerializeAndParse();
+        format.Contains<T>().Should().BeTrue();
+        TypeName typeName = format.GetRootTypeName();
+        typeName.FullName.Should().Be(typeof(T).FullName);
+        string shortAssemblyName = forwardedAssemblyName ?? typeof(T).Assembly.FullName!.Split(',')[0].Trim();
+        typeName.AssemblyName!.Name.Should().Be(shortAssemblyName);
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_Point()
+    {
+        Point point = new() { X = 1, Y = 1 };
+        BinaryFormattedObject format = point.SerializeAndParse();
+        format.Contains<Point>().Should().BeTrue();
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_GetRootTypeName_Point()
+    {
+        Point point = new() { X = 1, Y = 1 };
+        BinaryFormattedObject format = point.SerializeAndParse();
+        TypeName typeName = format.GetRootTypeName();
+
+        typeName.FullName.Should().Be(typeof(Point).FullName);
+        // Formatter used the old, "forwarded from" assembly name.
+        // string shortAssemblyName = typeof(Point).Assembly.FullName!.Split(',')[0];
+        typeName.AssemblyName!.Name.Should().Be("System.Drawing");
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_Contains_PointArray()
+    {
+        Point[] points = [new(1, 2), new(3, 4)];
+        BinaryFormattedObject format = points.SerializeAndParse();
+        format.Contains<Point[]>().Should().BeTrue();
+    }
+
+    [Fact]
+    public void BinaryFormattedObject_GetRootTypeName_PointArray()
+    {
+        Point[] points = [new(1, 2), new(3, 4)];
+        BinaryFormattedObject format = points.SerializeAndParse();
+        format.GetRootTypeName().Should().Be($"{typeof(Point).FullName}[]");
     }
 
     [Theory]

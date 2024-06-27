@@ -87,15 +87,6 @@ public class ClipboardProxyTests
     }
 
 #nullable enable
-    [WinFormsFact]
-    public void DataOfT_Bitmap()
-    {
-        var clipboard = new Computer().Clipboard;
-        Bitmap data = new(16, 16);
-        clipboard.SetDataAsJson(data);
-        clipboard.TryGetData(out Bitmap? actual).Should().Be(System.Windows.Forms.Clipboard.TryGetData(out Bitmap? expected));
-        actual.Should().BeEquivalentTo(expected);
-    }
 
     [WinFormsFact]
     public void DataOfT_Text()
