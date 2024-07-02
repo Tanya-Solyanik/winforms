@@ -26,6 +26,17 @@ public partial class ClipboardTests
         Clipboard.SetData(format, Color.Black);
 
         Clipboard.ContainsData(format).Should().BeTrue();
+        Clipboard.GetData(format).Should().BeOfType<MemoryStream>();
+    }
+
+        [WinFormsFact]
+    public void Clipboard_SetData_CustomFormat_BinaryFormatterEnabledForClipboard_Color()
+    {
+        string format = nameof(Clipboard_SetData_CustomFormat_Color);
+        Clipboard.SetData(format, Color.Black);
+
+        Clipboard.ContainsData(format).Should().BeTrue();
+        using BinaryFormatterInClipboardScope scope = new(enable: true);
         Clipboard.GetData(format).Should().Be(Color.Black);
     }
 }

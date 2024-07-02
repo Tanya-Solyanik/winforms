@@ -3,6 +3,7 @@
 
 using System.Drawing;
 using System.Private.Windows.Core.BinaryFormat;
+using System.Runtime.CompilerServices;
 
 namespace System.Windows.Forms.BinaryFormat;
 
@@ -60,4 +61,200 @@ internal static class WinFormsBinaryFormattedObjectExtensions
         format.TryGetFrameworkObject(out value)
         || format.TryGetBitmap(out value)
         || format.TryGetImageListStreamer(out value);
+
+    /// <summary>
+    ///  Verify if this binary formatted object contains an object of type <typeparamref name="T"/>.
+    /// </summary>
+    public static bool Contains<T>(this BinaryFormattedObject format)
+    {
+        switch (format.RootRecord)
+        {
+            case ClassRecord record:
+                var (recordTypeName, recordAssemblyName) = format.GetNamesFromClassRecord(record);
+
+                Type type = typeof(T);
+                var (requestedTypeName, requestedAssemblyName) = GetNamesFromTypeSimpleNullable(type);
+
+                // Name of the root record could be a .NET Framework or .NET type, first compare to T as the .NET type,
+                // then if T has a TypeForwardedFrom attribute, compare get assembly name type was forwarded from.
+                if (string.Equals(requestedTypeName, recordTypeName, StringComparison.Ordinal))
+                {
+                    if (string.Equals(requestedAssemblyName, recordAssemblyName, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+
+                    if (TryGetForwardedFromName(type, out string? name) && string.Equals(recordAssemblyName, name, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+
+                Type recordType = format.TypeResolver.GetType(record.Name, record.LibraryId);
+                return recordType.IsAssignableTo(typeof(T));
+
+            case BinaryObjectString:
+                return typeof(string) == typeof(T);
+
+            case ArraySingleString:
+                return typeof(string[]) == typeof(T);
+
+            case ArraySingleObject:
+                return typeof(object[]).IsAssignableTo(typeof(T));
+
+            case IPrimitiveTypeRecord primitiveArray:
+                if (primitiveArray is not ArrayRecord)
+                {
+                    throw new NotSupportedException($"A root {nameof(IPrimitiveTypeRecord)} is not an array.");
+                }
+
+                Type requestedType = typeof(T);
+                if (!requestedType.IsArray || requestedType.GetArrayRank() != 1)
+                {
+                    return false;
+                }
+
+                return primitiveArray.PrimitiveType.IsSameElementType(requestedType.GetElementType()!);
+
+            case IBinaryArray binaryArray:
+                return format.IsBinaryArrayOfType<T>(binaryArray);
+
+            default:
+                throw new NotSupportedException($"RootRecord should not be of type {format.RootRecord.GetType().Name}.");
+        }
+    }
+
+    private static (string typeName, string assemblyName) GetNamesFromClassRecord(this BinaryFormattedObject format, ClassRecord record)
+    {
+        string typeName = record.Name;
+        string assemblyName = (record.LibraryId.IsNull
+            ? TypeInfo.MscorlibAssemblyName
+            : ((BinaryLibrary)format[record.LibraryId]).LibraryName) ?? throw new NotSupportedException("A class Record does not reference a valid library.");
+
+        assemblyName = assemblyName.Split(',')[0].Trim();
+        return (record.Name, assemblyName);
+    }
+
+    private static (string typeName, string assemblyName) GetNamesFromTypeSimpleNullable(Type type)
+    {
+        type = Formatter.NullableUnwrap(type);
+        return (type.FullName!, type.Assembly.FullName!.Split(',')[0].Trim());
+    }
+
+    private static bool IsBinaryArrayOfType<T>(this BinaryFormattedObject format, IBinaryArray binaryArray)
+    {
+        if (binaryArray is not ArrayRecord arrayRecord)
+        {
+            throw new NotSupportedException("A root IBinaryArray is not an array record.");
+        }
+
+        Type requestedType = typeof(T);
+        if (!requestedType.IsArray || requestedType.GetArrayRank() != binaryArray.Rank)
+        {
+            return false;
+        }
+
+        BinaryArrayType arrayType = binaryArray.ArrayType;
+        if (arrayType is not (BinaryArrayType.Single or BinaryArrayType.Jagged or BinaryArrayType.Rectangular))
+        {
+            // This can't happen after the stream had been read successfully.
+            new NotSupportedException("Only arrays with zero offsets are supported.");
+        }
+
+        object? info = binaryArray.ElementTypeInfo;
+        // TanyaSo - why did I remove nullable?
+        Type requestedElementType = requestedType.GetElementType()!;
+        var (requestedTypeName, requestedAssemblyName) = GetNamesFromTypeSimpleNullable(requestedElementType);
+        switch (arrayRecord.ElementType)
+        {
+            case BinaryType.SystemClass:
+                {
+                    if (info is Type recordElementType)
+                    {
+                        return recordElementType.IsAssignableTo(requestedElementType);
+                    }
+
+                    string elementTypeName = (string)info!;
+                    if (string.Equals(requestedTypeName, elementTypeName, StringComparison.Ordinal))
+                    {
+                        // TanyaSo: test DayOfWeek
+                        if (string.Equals(requestedAssemblyName, TypeInfo.MscorlibAssemblyName, StringComparison.Ordinal))
+                        {
+                            return true;
+                        }
+
+                        if (TryGetForwardedFromName(requestedElementType, out string? name)
+                            && string.Equals(TypeInfo.MscorlibAssemblyName, name, StringComparison.Ordinal))
+                        {
+                            return true;
+                        }
+                    }
+
+                    Type recordType = format.TypeResolver.GetType(elementTypeName, Id.Null);
+                    return recordType.IsAssignableTo(requestedElementType);
+                }
+
+            case BinaryType.Class:
+                {
+                    if (info is Type recordElementType)
+                    {
+                        return recordElementType.IsAssignableTo(requestedElementType);
+                    }
+
+                    string elementTypeName;
+                    string elementAssemblyName;
+                    ClassTypeInfo classType = (ClassTypeInfo)info!;
+                    elementTypeName = classType.TypeName;
+                    elementAssemblyName = ((BinaryLibrary)format[classType.LibraryId]).LibraryName.Split(',')[0].Trim();
+
+                    if (string.Equals(requestedTypeName, elementTypeName, StringComparison.Ordinal))
+                    {
+                        if (string.Equals(requestedAssemblyName, elementAssemblyName, StringComparison.Ordinal))
+                        {
+                            return true;
+                        }
+
+                        if (TryGetForwardedFromName(requestedElementType, out string? name) && string.Equals(elementAssemblyName, name, StringComparison.Ordinal))
+                        {
+                            return true;
+                        }
+                    }
+
+                    recordElementType = format.TypeResolver.GetType(elementTypeName, Id.Null);
+                    return recordElementType.IsAssignableTo(requestedElementType);
+                }
+
+            case BinaryType.String:
+                return requestedElementType == typeof(string);
+
+            case BinaryType.PrimitiveArray:
+                return ((PrimitiveType)info!).IsSameElementType(requestedElementType);
+
+            default:
+                throw new NotSupportedException($"Unexpected BinaryArray type: {arrayRecord.ElementType}");
+        }
+    }
+
+    private static bool TryGetForwardedFromName(Type type, out string? name)
+    {
+        name = null;
+        // Special case types like arrays.
+        Type attributedType = type;
+        while (attributedType.HasElementType)
+        {
+            attributedType = attributedType.GetElementType()!;
+        }
+
+        attributedType = Formatter.NullableUnwrap(attributedType);
+
+        object[] a = attributedType.GetCustomAttributes(typeof(TypeForwardedFromAttribute), inherit: false);
+
+        foreach (Attribute first in attributedType.GetCustomAttributes(typeof(TypeForwardedFromAttribute), inherit: false))
+        {
+            name = ((TypeForwardedFromAttribute)first).AssemblyFullName.Split(',')[0].Trim();
+            return true;
+        }
+
+        return false;
+    }
 }

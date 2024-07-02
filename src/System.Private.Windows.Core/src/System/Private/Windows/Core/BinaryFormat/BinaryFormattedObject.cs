@@ -32,7 +32,7 @@ internal sealed partial class BinaryFormattedObject
     private readonly RecordMap _recordMap = new();
 
     private ITypeResolver? _typeResolver;
-    private ITypeResolver TypeResolver => _typeResolver ??= new DefaultTypeResolver(_options, _recordMap);
+    internal ITypeResolver TypeResolver => _typeResolver ??= new DefaultTypeResolver(_options, _recordMap);
 
     private readonly Id _rootRecord;
 
