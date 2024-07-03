@@ -131,11 +131,11 @@ public class WinFormsBinaryFormattedObjectTests
     [Fact]
     public void BinaryFormattedObject_Contains_intArray()
     {
-        int[] data = { 101, 202, 303 };
-        BinaryFormattedObject_Contains(data);
+        int[] simple = { 101, 202, 303 };
+        BinaryFormattedObject_Contains(simple);
 
-        int?[] data1 = { 101, 202, 303 };
-        BinaryFormattedObject_Contains(data1);
+        int?[] nullableElements = { 101, 202, 303 };
+        BinaryFormattedObject_Contains(nullableElements);
 
         int[,] multidimensional = new int[3, 2]
         {
@@ -145,6 +145,14 @@ public class WinFormsBinaryFormattedObjectTests
         };
         BinaryFormattedObject_Contains(multidimensional);
 
+        int?[,] multidimensionalNullable = new int?[3, 2]
+        {
+            {1,2},
+            {2,3},
+            {4,5}
+        };
+        BinaryFormattedObject_Contains(multidimensionalNullable);
+
         int[][] jagged =
         [
             [1, 2, 3, 4],
@@ -152,6 +160,14 @@ public class WinFormsBinaryFormattedObjectTests
             [10, 11, 12],
         ];
         BinaryFormattedObject_Contains(jagged);
+
+        int?[][] jaggedNullable =
+        [
+            [1, 2, 3, 4],
+            [5, 6, 7, 8, 9],
+            [10, 11, 12],
+        ];
+        BinaryFormattedObject_Contains(jaggedNullable);
     }
 
     [Fact]
@@ -186,20 +202,6 @@ public class WinFormsBinaryFormattedObjectTests
     }
 
     [Fact]
-    public void BinaryFormattedObject_Contains_MemoryStream()
-    {
-        using MemoryStream data = new MemoryStream([101, 102]);
-        BinaryFormattedObject_Contains(data);
-    }
-
-    [Fact]
-    public void BinaryFormattedObject_Contains_Stream()
-    {
-        using Stream data = new MemoryStream([101, 102]);
-        BinaryFormattedObject_Contains(data);
-    }
-
-    [Fact]
     public void BinaryFormattedObject_Contains_DayOfWeek()
     {
         DayOfWeek data = DayOfWeek.Sunday;
@@ -222,9 +224,9 @@ public class WinFormsBinaryFormattedObjectTests
 
     public static TheoryData<object> Object_TestData() => new()
     {
-        null!,
         new(),
-        "text"
+        "text",
+        101
     };
 
     // TanyaSo: tests with a resolver TestData[]

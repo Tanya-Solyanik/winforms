@@ -9,44 +9,21 @@ internal static class WinFormsArrayRecordExtensions
 {
     // Use the .NET assembly names, even if we store the .NET Framework type name on the clipboard,
     // this will be used to match against the .NET type.
-    private readonly static TypeName s_booleanArrayTypeName = TypeName.Parse("System.Boolean[], System.Private.CoreLib");
-    private readonly static TypeName s_byteArrayTypeName = TypeName.Parse("System.Byte[], System.Private.CoreLib");
-    private readonly static TypeName s_charArrayTypeName = TypeName.Parse("System.Char[], System.Private.CoreLib");
-    private readonly static TypeName s_decimalArrayTypeName = TypeName.Parse("System.Decimal[], System.Private.CoreLib");
-    private readonly static TypeName s_doubleArrayTypeName = TypeName.Parse("System.Double[], System.Private.CoreLib");
-    private readonly static TypeName s_int16ArrayTypeName = TypeName.Parse("System.Int16[], System.Private.CoreLib");
-    private readonly static TypeName s_int32ArrayTypeName = TypeName.Parse("System.Int32[], System.Private.CoreLib");
-    private readonly static TypeName s_int64ArrayTypeName = TypeName.Parse("System.Int64[], System.Private.CoreLib");
-    private readonly static TypeName s_sbyteArrayTypeName = TypeName.Parse("System.SByte[], System.Private.CoreLib");
-    private readonly static TypeName s_singleArrayTypeName = TypeName.Parse("System.Single[], System.Private.CoreLib");
-    private readonly static TypeName s_timeSpanArrayTypeName = TypeName.Parse("System.TimeSpan[], System.Private.CoreLib");
-    private readonly static TypeName s_dateTimeArrayTypeName = TypeName.Parse("System.DateTime[], System.Private.CoreLib");
-    private readonly static TypeName s_uint16ArrayTypeName = TypeName.Parse("System.UInt16[], System.Private.CoreLib");
-    private readonly static TypeName s_uint32ArrayTypeName = TypeName.Parse("System.UInt32[], System.Private.CoreLib");
-    private readonly static TypeName s_uint64ArrayTypeName = TypeName.Parse("System.UInt64[], System.Private.CoreLib");
-
-    internal static bool IsSameElementType(this PrimitiveType primitiveType, Type type)
-    {
-        return primitiveType switch
-        {
-            PrimitiveType.Boolean => type == typeof(bool[]),
-            PrimitiveType.Byte => type == typeof(byte[]),
-            PrimitiveType.Char => type == typeof(char[]),
-            PrimitiveType.Decimal => type == typeof(decimal[]),
-            PrimitiveType.Double => type == typeof(double[]),
-            PrimitiveType.Int16 => type == typeof(short[]),
-            PrimitiveType.Int32 => type == typeof(int[]),
-            PrimitiveType.Int64 => type == typeof(long[]),
-            PrimitiveType.SByte => type == typeof(sbyte[]),
-            PrimitiveType.Single => type == typeof(float[]),
-            PrimitiveType.TimeSpan => type == typeof(TimeSpan[]),
-            PrimitiveType.DateTime => type == typeof(DateTime[]),
-            PrimitiveType.UInt16 => type == typeof(ushort[]),
-            PrimitiveType.UInt32 => type == typeof(uint[]),
-            PrimitiveType.UInt64 => type == typeof(ulong[]),
-            _ => throw new InvalidOperationException($"Unexpected primitive array type: '{primitiveType}'")
-        };
-    }
+    private static readonly TypeName s_booleanArrayTypeName = TypeName.Parse("System.Boolean[], System.Private.CoreLib");
+    private static readonly TypeName s_byteArrayTypeName = TypeName.Parse("System.Byte[], System.Private.CoreLib");
+    private static readonly TypeName s_charArrayTypeName = TypeName.Parse("System.Char[], System.Private.CoreLib");
+    private static readonly TypeName s_decimalArrayTypeName = TypeName.Parse("System.Decimal[], System.Private.CoreLib");
+    private static readonly TypeName s_doubleArrayTypeName = TypeName.Parse("System.Double[], System.Private.CoreLib");
+    private static readonly TypeName s_int16ArrayTypeName = TypeName.Parse("System.Int16[], System.Private.CoreLib");
+    private static readonly TypeName s_int32ArrayTypeName = TypeName.Parse("System.Int32[], System.Private.CoreLib");
+    private static readonly TypeName s_int64ArrayTypeName = TypeName.Parse("System.Int64[], System.Private.CoreLib");
+    private static readonly TypeName s_sbyteArrayTypeName = TypeName.Parse("System.SByte[], System.Private.CoreLib");
+    private static readonly TypeName s_singleArrayTypeName = TypeName.Parse("System.Single[], System.Private.CoreLib");
+    private static readonly TypeName s_timeSpanArrayTypeName = TypeName.Parse("System.TimeSpan[], System.Private.CoreLib");
+    private static readonly TypeName s_dateTimeArrayTypeName = TypeName.Parse("System.DateTime[], System.Private.CoreLib");
+    private static readonly TypeName s_uint16ArrayTypeName = TypeName.Parse("System.UInt16[], System.Private.CoreLib");
+    private static readonly TypeName s_uint32ArrayTypeName = TypeName.Parse("System.UInt32[], System.Private.CoreLib");
+    private static readonly TypeName s_uint64ArrayTypeName = TypeName.Parse("System.UInt64[], System.Private.CoreLib");
 
     internal static TypeName GetTypeName(this PrimitiveType primitiveType)
     {

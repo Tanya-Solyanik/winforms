@@ -136,14 +136,13 @@ public unsafe partial class DataObject
                 }
 
                 long startPosition = stream.Position;
-                if (legacyCompatMode)
-                {
-                    return ReadObjectWithBinaryFormatterDeserializer<T>(stream, restrictDeserialization, resolver);
-                }
 
                 BinaryFormattedObject binaryFormattedObject;
-                SerializationBinder binder = restrictDeserialization ? new BitmapBinder() : new ComposedBinder(typeof(T), resolver);
-                BinaryFormattedObject.Options options = new() { Binder = binder };
+                SerializationBinder binder = restrictDeserialization ? new BitmapBinder() : new ComposedBinder(typeof(T), resolver, legacyCompatMode);
+                BinaryFormattedObject.Options options = new()
+                {
+                    Binder = binder
+                };
 
                 try
                 {
@@ -151,22 +150,30 @@ public unsafe partial class DataObject
                 }
                 catch (Exception ex) when (!ex.IsCriticalException())
                 {
+                    if (legacyCompatMode) // + switch on
+                    {
+                        return ReadObjectWithBinaryFormatterDeserializer<T>(stream, binder);
+                    }
+
                     if (ex is NotSupportedException nse)
                     {
-                        // The TryGetData APIs don't read the binary data, unless the root type matches the requested type.
+                        // The TryGetData APIs don't read the binary data, unless the root type matches the requested type,
+                        // thus they must provide an appropriate resolver.
+                        // The GetData APIs use BinaryFormatter only when they opt in into it.
                         throw new BinaryFormattedObjectException(nse);
                     }
 
-                    return default;
-                }
-
-                if (!binaryFormattedObject.Contains<T>())
-                {
+                    // Invalid stream.
                     return default;
                 }
 
                 try
                 {
+                    if (!binaryFormattedObject.Contains<T>())
+                    {
+                        return default;
+                    }
+
                     if (binaryFormattedObject.TryGetObject(out object? value))
                     {
                         // TanyaSo: I'm ignoring the "not supported exception" message here. This should throw instead.
@@ -174,27 +181,27 @@ public unsafe partial class DataObject
                     }
 
                     value = binaryFormattedObject.Deserialize();
-                    Debug.Assert(value is T, $"{nameof(BinaryFormattedObject)} throws in case of corrupted or unsupported data");
+                    Debug.Assert(value is T, $"{nameof(BinaryFormattedObject)} throws in case of corrupted or unsupported data," +
+                        $" it should not deserialize an unexpected type.");
                     return value;
                 }
-                catch (Exception ex) when (!ex.IsCriticalException() && (ex is not BinaryFormattedObjectException))
+                catch (Exception ex) when (!ex.IsCriticalException())
                 {
-                    // TanyaSo: I don't think BinaryFormattedObjectException can happen here once BFO had read the stream successfully.
                     // Couldn't parse for some reason, let the BinaryFormatter try to handle it.
                 }
 
-                stream.Position = startPosition;
-                return ReadObjectWithBinaryFormatterDeserializer<T>(stream, restrictDeserialization, resolver);
-            }
-
-            private static object? ReadObjectWithBinaryFormatterDeserializer<T>(MemoryStream stream, bool restrictDeserialization, Func<TypeName, Type> resolver)
-            {
-                if (resolver is null)
+                if (resolver is null && !legacyCompatMode && !restrictDeserialization)
                 {
                     // TanyaSo - NotSupportedException?
                     return default;
                 }
 
+                stream.Position = startPosition;
+                return ReadObjectWithBinaryFormatterDeserializer<T>(stream, binder);
+            }
+
+            private static object? ReadObjectWithBinaryFormatterDeserializer<T>(MemoryStream stream, SerializationBinder binder)
+            {
                 // This check is to help in trimming scenarios with a trim warning on a call to BinaryFormatter.Deserialize(), which has a RequiresUnreferencedCode annotation.
                 // If the flag is false, the trimmer will not generate a warning, since BinaryFormatter.Deserialize() will not be called,
                 // If the flag is true, the trimmer will generate a warning for calling a method that has a RequiresUnreferencedCode annotation.
@@ -207,7 +214,7 @@ public unsafe partial class DataObject
 #pragma warning disable SYSLIB0050 // Type or member is obsolete
                 return new BinaryFormatter()
                 {
-                    Binder = restrictDeserialization ? new BitmapBinder() : new ComposedBinder(typeof(T), resolver),
+                    Binder = binder,
                     AssemblyFormat = FormatterAssemblyStyle.Simple
                 }.Deserialize(stream);
 #pragma warning restore SYSLIB0050
@@ -395,9 +402,6 @@ public unsafe partial class DataObject
                     doNotContinue = true;
                 }
                 catch (Exception ex) when (ex is not BinaryFormattedObjectException)
-                {
-                }
-                catch
                 {
                 }
                 finally

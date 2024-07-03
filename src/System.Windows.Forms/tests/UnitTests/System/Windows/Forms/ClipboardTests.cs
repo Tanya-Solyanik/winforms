@@ -308,10 +308,7 @@ public partial class ClipboardTests
 
         var dataObject = Clipboard.GetDataObject();
         Assert.NotNull(dataObject);
-        using (BinaryFormatterInClipboardScope scope = new(enable: true))
-        {
-            dataObject.GetData(data.GetType()).Should().Be(data);
-        }
+        dataObject.GetData(data.GetType()).Should().Be(data);
 
         Clipboard.ContainsData(data.GetType().FullName).Should().BeTrue();
     }
@@ -324,12 +321,9 @@ public partial class ClipboardTests
         DataObject dataObject = new(data);
         Clipboard.SetDataObject(dataObject);
 
-        using (BinaryFormatterInClipboardScope scope = new(enable: true))
-        {
-            var actual = Clipboard.GetDataObject();
-            Assert.NotNull(actual);
-            actual.GetData(data.GetType()).Should().Be(data);
-        }
+        var actual = Clipboard.GetDataObject();
+        Assert.NotNull(actual);
+        actual.GetData(data.GetType()).Should().Be(data);
 
         Clipboard.ContainsData(data.GetType().FullName).Should().BeTrue();
     }

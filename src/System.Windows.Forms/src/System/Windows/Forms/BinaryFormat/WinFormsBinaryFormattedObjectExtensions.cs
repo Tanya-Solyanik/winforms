@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Drawing;
 using System.Private.Windows.Core.BinaryFormat;
 using System.Runtime.CompilerServices;
@@ -62,6 +63,33 @@ internal static class WinFormsBinaryFormattedObjectExtensions
         || format.TryGetBitmap(out value)
         || format.TryGetImageListStreamer(out value);
 
+    public static bool IsKnownType(Type type) =>
+        type.IsPrimitive ||
+        type == typeof(string) ||
+        type == typeof(Array) ||
+        type == typeof(Bitmap) ||
+        type == typeof(ImageListStreamer) ||
+        type == typeof(decimal) ||
+        type == typeof(DateTime) ||
+        type == typeof(TimeSpan) ||
+        type == typeof(PointF) ||
+        type == typeof(RectangleF) ||
+        type == typeof(Hashtable) ||
+        type == typeof(ArrayList) ||
+        type == typeof(List<string>) ||
+        type == typeof(List<int>) ||
+        type == typeof(List<byte>) ||
+        type == typeof(List<short>) ||
+        type == typeof(List<long>) ||
+        type == typeof(List<ushort>) ||
+        type == typeof(List<ulong>) ||
+        type == typeof(List<float>) ||
+        type == typeof(List<double>) ||
+        type == typeof(List<decimal>) ||
+        type == typeof(List<DateTime>) ||
+        type == typeof(List<TimeSpan>) ||
+        type == typeof(List<char>);
+
     /// <summary>
     ///  Verify if this binary formatted object contains an object of type <typeparamref name="T"/>.
     /// </summary>
@@ -94,10 +122,11 @@ internal static class WinFormsBinaryFormattedObjectExtensions
                 return recordType.IsAssignableTo(typeof(T));
 
             case BinaryObjectString:
-                return typeof(string) == typeof(T);
+                // We should return a string if the user is requesting an object.
+                return typeof(string).IsAssignableTo(typeof(T));
 
             case ArraySingleString:
-                return typeof(string[]) == typeof(T);
+                return typeof(string[]).IsAssignableTo(typeof(T));
 
             case ArraySingleObject:
                 return typeof(object[]).IsAssignableTo(typeof(T));
@@ -109,12 +138,25 @@ internal static class WinFormsBinaryFormattedObjectExtensions
                 }
 
                 Type requestedType = typeof(T);
-                if (!requestedType.IsArray || requestedType.GetArrayRank() != 1)
+                if (!requestedType.IsArray)
                 {
                     return false;
                 }
 
-                return primitiveArray.PrimitiveType.IsSameElementType(requestedType.GetElementType()!);
+                if (primitiveArray is IBinaryArray binaryArrayPrimitive)
+                {
+                    if (binaryArrayPrimitive.Rank != requestedType.GetArrayRank())
+                    {
+                        return false;
+                    }
+                }
+                else if (requestedType.GetArrayRank() != 1)
+                {
+                    // ArraySinglePrimitive<T>
+                    return false;
+                }
+
+                return primitiveArray.PrimitiveType.GetPrimitiveTypeType() == requestedType.GetElementType();
 
             case IBinaryArray binaryArray:
                 return format.IsBinaryArrayOfType<T>(binaryArray);
@@ -145,7 +187,7 @@ internal static class WinFormsBinaryFormattedObjectExtensions
     {
         if (binaryArray is not ArrayRecord arrayRecord)
         {
-            throw new NotSupportedException("A root IBinaryArray is not an array record.");
+            throw new NotSupportedException($"A root {nameof(IBinaryArray)} is not an {nameof(ArrayRecord)}.");
         }
 
         Type requestedType = typeof(T);
@@ -162,8 +204,12 @@ internal static class WinFormsBinaryFormattedObjectExtensions
         }
 
         object? info = binaryArray.ElementTypeInfo;
-        // TanyaSo - why did I remove nullable?
-        Type requestedElementType = requestedType.GetElementType()!;
+        Type? requestedElementType = requestedType.GetElementType();
+        if (requestedElementType is null)
+        {
+            return false;
+        }
+
         var (requestedTypeName, requestedAssemblyName) = GetNamesFromTypeSimpleNullable(requestedElementType);
         switch (arrayRecord.ElementType)
         {
@@ -191,6 +237,7 @@ internal static class WinFormsBinaryFormattedObjectExtensions
                     }
 
                     Type recordType = format.TypeResolver.GetType(elementTypeName, Id.Null);
+                    recordType = Formatter.NullableUnwrap(recordType);
                     return recordType.IsAssignableTo(requestedElementType);
                 }
 
@@ -228,7 +275,13 @@ internal static class WinFormsBinaryFormattedObjectExtensions
                 return requestedElementType == typeof(string);
 
             case BinaryType.PrimitiveArray:
-                return ((PrimitiveType)info!).IsSameElementType(requestedElementType);
+                while (requestedElementType?.IsArray is true)
+                {
+                    // Multidimensional array is an array of arrays.
+                    requestedElementType = requestedElementType.GetElementType();
+                }
+
+                return ((PrimitiveType)info!).GetPrimitiveTypeType().IsAssignableTo(requestedElementType);
 
             default:
                 throw new NotSupportedException($"Unexpected BinaryArray type: {arrayRecord.ElementType}");
