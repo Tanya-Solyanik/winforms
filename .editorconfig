@@ -656,7 +656,7 @@ dotnet_style_prefer_collection_expression = true:silent
 # xUnit1042: The member referenced by the MemberData attribute returns untyped data rows
 dotnet_diagnostic.xUnit1042.severity = none
 
-# CA1507: CA1507: Use nameof in place of string - many fasle positives
+# CA1507: CA1507: Use nameof in place of string - many false positives
 dotnet_diagnostic.CA1507.severity = none
 
 # CA1822: Mark members as static
@@ -668,8 +668,6 @@ dotnet_diagnostic.CA1852.severity = suggestion
 # CA1859: Use concrete types when possible for improved performance
 dotnet_diagnostic.CA1859.severity = none
 
-
-
 # Verify settings
 [*.{received,verified}.{txt,xml,json}]
 charset = "utf-8-bom"
@@ -679,3 +677,8 @@ indent_style = unset
 insert_final_newline = false
 tab_width = unset
 trim_trailing_whitespace = false
+
+# Spell check extension - https://ewsoftware.github.io/VSSpellChecker
+[*]
+vsspell_section_id = f3e77386a7024f7fb9cfb92923f6098b
+vsspell_ignored_words_f3e77386a7024f7fb9cfb92923f6098b = ints|Enums
