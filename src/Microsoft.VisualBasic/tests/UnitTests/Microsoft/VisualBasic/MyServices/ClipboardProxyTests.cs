@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Drawing;
+using System.Reflection.Metadata;
 using Microsoft.VisualBasic.Devices;
 using DataFormats = System.Windows.Forms.DataFormats;
 using TextDataFormat = System.Windows.Forms.TextDataFormat;
@@ -89,5 +90,57 @@ public class ClipboardProxyTests
         System.Windows.Forms.Clipboard.GetText().Should().Be(clipboard.GetText());
         System.Windows.Forms.Clipboard.GetText(TextDataFormat.UnicodeText).Should().Be(clipboard.GetText(TextDataFormat.UnicodeText));
         clipboard.GetText(TextDataFormat.UnicodeText).Should().Be(text);
+    }
+
+    [WinFormsFact]
+    public void DataOfT_CustomType()
+    {
+        var clipboard = new Computer().Clipboard;
+        DataWithObjectField data = new("thing1", "thing2");
+        clipboard.SetDataAsJson(data);
+        clipboard.TryGetData(typeof(DataWithObjectField).FullName!, DataResolver, out DataWithObjectField? actual).Should()
+            .Be(System.Windows.Forms.Clipboard.TryGetData(typeof(DataWithObjectField).FullName!, DataResolver, out DataWithObjectField? expected));
+        actual.Should().BeEquivalentTo(expected);
+    }
+
+    [WinFormsFact]
+    public void DataOfT_CustomType_BinaryFormatterRequired()
+    {
+        var clipboard = new Computer().Clipboard;
+        DataWithObjectField data = new("thing1", "thing2");
+        using BinaryFormatterScope scope = new(enable: true);
+        clipboard.SetData(typeof(DataWithObjectField).FullName!, data);
+        clipboard.TryGetData(typeof(DataWithObjectField).FullName!, DataResolver, out DataWithObjectField? actual).Should()
+            .Be(System.Windows.Forms.Clipboard.TryGetData(typeof(DataWithObjectField).FullName!, DataResolver, out DataWithObjectField? expected));
+        actual.Should().BeEquivalentTo(expected);
+    }
+
+    [Serializable]
+    private class DataWithObjectField
+    {
+        public DataWithObjectField(string text1, object object2)
+        {
+            _text1 = text1;
+            _object2 = object2;
+        }
+
+        public string _text1;
+        public object _object2;
+    }
+
+    private static Type DataResolver(TypeName typeName)
+    {
+        Type type = typeof(DataWithObjectField);
+        TypeName parsed = TypeName.Parse($"{type.FullName}, {type.Assembly.FullName}");
+
+        // Namespace-qualified type name.
+        if (typeName.FullName == parsed.FullName
+            // Ignore version, culture, and public key token in the assembly name.
+            && typeName.AssemblyName?.Name == parsed.AssemblyName?.Name)
+        {
+            return type;
+        }
+
+        throw new NotSupportedException($"Unexpected type {typeName.AssemblyQualifiedName}.");
     }
 }
