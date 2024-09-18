@@ -89,27 +89,19 @@
     <ProjectReference Include="..\..\src\System.Windows.Forms.Primitives\src\System.Windows.Forms.Primitives.csproj" />
 
     <!-- Reference and Source System.Windows.Forms.Design -->
-    <ProjectReference Include="..\..\src\System.Windows.Forms.Design\src\System.Windows.Forms.Design.csproj" />
 
     <!-- Facade for System.Windows.Forms.Design.Editors -->
     <ProjectReference Include="..\..\src\System.Windows.Forms.Design.Editors\src\System.Windows.Forms.Design.Editors.Facade3x.csproj" />
     
     <!-- Facade for Microsoft.VisualBasic -->
-    <ProjectReference Include="..\..\src\Microsoft.VisualBasic\src\Microsoft.VisualBasic.Facade.csproj" />
 
     <!-- Reference and Source Microsoft.VisualBasic.Forms -->
-    <ProjectReference Include="..\..\src\Microsoft.VisualBasic.Forms\src\Microsoft.VisualBasic.Forms.vbproj" />
 
     <ProjectReference Include="..\..\src\Accessibility\src\Accessibility.ilproj" />
 
     <!--
       Analyzers
     -->
-    <ProjectReference Include="..\..\src\System.Windows.Forms.Analyzers\src\System.Windows.Forms.Analyzers.csproj" />
-    <ProjectReference Include="..\..\src\System.Windows.Forms.Analyzers.CSharp\src\System.Windows.Forms.Analyzers.CSharp.csproj" />
-    <ProjectReference Include="..\..\src\System.Windows.Forms.Analyzers.VisualBasic\src\System.Windows.Forms.Analyzers.VisualBasic.vbproj" />
-    <ProjectReference Include="..\..\src\System.Windows.Forms.Analyzers.CodeFixes.CSharp\System.Windows.Forms.Analyzers.CodeFixes.CSharp.csproj" />
-    <ProjectReference Include="..\..\src\System.Windows.Forms.Analyzers.CodeFixes.VisualBasic\System.Windows.Forms.Analyzers.CodeFixes.VisualBasic.vbproj" />
 
   </ItemGroup>
 

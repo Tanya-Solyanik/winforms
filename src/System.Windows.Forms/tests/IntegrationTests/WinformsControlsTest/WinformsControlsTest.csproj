@@ -28,9 +28,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\BuildAssist\BuildAssist.msbuildproj" />
-    <ProjectReference Include="..\..\..\..\System.Design\src\System.Design.Facade.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Drawing.Design\src\System.Drawing.Design.Facade.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Design\src\System.Design.Facade.csproj" /><ProjectReference Include="..\..\..\..\System.Drawing.Design\src\System.Drawing.Design.Facade.csproj" />
     <ProjectReference Include="..\..\..\..\System.Windows.Forms.Design\src\System.Windows.Forms.Design.csproj" />
     <ProjectReference Include="..\..\..\..\System.Drawing.Common\src\System.Drawing.Common.csproj" />
     <ProjectReference Include="..\..\..\src\System.Windows.Forms.csproj" />
@@ -123,11 +121,6 @@
     <!-- Don't try to resolve analyzers from <repo root>\.dotnet\packs\Microsoft.WindowsDesktop.App.Ref\<version>\ref\net6.0 -->
     <ResolveWinFormsAnalyzersFromSdkRefPack>false</ResolveWinFormsAnalyzersFromSdkRefPack>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\System.Windows.Forms.Analyzers\src\System.Windows.Forms.Analyzers.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-    <ProjectReference Include="..\..\..\..\System.Windows.Forms.Analyzers.CSharp\src\System.Windows.Forms.Analyzers.CSharp.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="AxInterop.WMPLib">

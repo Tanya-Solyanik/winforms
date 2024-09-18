@@ -7,7 +7,7 @@ using WinFormsControlsTest;
 // Set STAThread
 Thread.CurrentThread.SetApartmentState(ApartmentState.Unknown);
 Thread.CurrentThread.SetApartmentState(ApartmentState.STA);
-ApplicationConfiguration.Initialize();
+// ApplicationConfiguration.Initialize();
 
 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
 Thread.CurrentThread.CurrentUICulture = Thread.CurrentThread.CurrentCulture;

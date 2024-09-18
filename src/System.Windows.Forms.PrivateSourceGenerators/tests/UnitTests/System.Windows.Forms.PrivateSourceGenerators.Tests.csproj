@@ -8,8 +8,4 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Windows.Forms.PrivateSourceGenerators.csproj" />
-  </ItemGroup>
-
 </Project>
