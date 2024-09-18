@@ -25,7 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\System.Drawing.Common\src\System.Drawing.Common.csproj" />
-    <ProjectReference Include="..\..\..\..\Microsoft.VisualBasic.Forms\src\Microsoft.VisualBasic.Forms.vbproj" />
     <ProjectReference Include="..\..\..\src\System.Windows.Forms.csproj" />
   </ItemGroup>
 
