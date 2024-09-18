@@ -19,7 +19,9 @@ public partial class RichTextBoxTests
             using MemoryStream memoryStream = new();
             using Bitmap bitmap = new(100, 100);
             bitmap.Save(memoryStream, Drawing.Imaging.ImageFormat.Png);
+#pragma warning disable WFDEV007 // Type or member is obsolete
             Clipboard.SetData("Embed Source", memoryStream);
+#pragma warning restore WFDEV007
 
             control.Text.Should().BeEmpty();
         }

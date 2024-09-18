@@ -6,6 +6,8 @@ Imports System.ComponentModel
 Imports System.Drawing
 Imports System.IO
 Imports System.Windows.Forms
+Imports System.Reflection.Metadata
+Imports System.Runtime.InteropServices
 
 Namespace Microsoft.VisualBasic.MyServices
 
@@ -15,7 +17,6 @@ Namespace Microsoft.VisualBasic.MyServices
     ''' </summary>
     <EditorBrowsable(EditorBrowsableState.Never)>
     Public Class ClipboardProxy
-
         ''' <summary>
         '''  Only allows instantiation of the class
         ''' </summary>
@@ -94,7 +95,9 @@ Namespace Microsoft.VisualBasic.MyServices
         ''' <param name="format">The type of data being sought.</param>
         ''' <returns>The data.</returns>
         Public Function GetData(format As String) As Object
+#Disable Warning WFDEV005 ' Type or member is obsolete
             Return Clipboard.GetData(format)
+#Enable Warning WFDEV005
         End Function
 
         ''' <summary>
@@ -162,7 +165,9 @@ Namespace Microsoft.VisualBasic.MyServices
         ''' <param name="format">The format in which to save the data.</param>
         ''' <param name="data">The data to be saved.</param>
         Public Sub SetData(format As String, data As Object)
+#Disable Warning WFDEV007 ' Type or member is obsolete
             Clipboard.SetData(format, data)
+#Enable Warning WFDEV007
         End Sub
 
         ''' <summary>
@@ -184,6 +189,25 @@ Namespace Microsoft.VisualBasic.MyServices
         End Sub
 
         ''' <summary>
+        '''  Gets data of type <typeparamref name="T"/> from the clipboard that's been saved in the passed in format.
+        ''' </summary>
+        ''' <param name="format">The format in which to search for the data of type <typeparamref name="T"/>. </param>
+        ''' <param name="data">The retrieved data, if successful.</param>
+        ''' <param name="resolver">Control BinaryFormatter deserialization.</param>
+        Public Function TryGetData(Of T)(format As String, resolver As Func(Of TypeName, Type), <Out> ByRef data As T) As Boolean
+            Return Clipboard.TryGetData(format, resolver, data)
+        End Function
+
+        ''' <summary>
+        '''  Gets data of type <typeparamref name="T"/> from the clipboard that's been saved in the passed in format.
+        ''' </summary>
+        ''' <param name="format">The format in which to search for the data of type <typeparamref name="T"/>. </param>
+        ''' <param name="data">The retrieved data, if successful.</param>
+        Public Function TryGetData(Of T)(format As String, <Out> ByRef data As T) As Boolean
+            Return Clipboard.TryGetData(format, data)
+        End Function
+
+        ''' <summary>
         '''  Saves the passed in <see cref="Image"/> to the clipboard.
         ''' </summary>
         ''' <param name="image">The <see cref="Image"/> to be saved.</param>
@@ -192,7 +216,15 @@ Namespace Microsoft.VisualBasic.MyServices
         End Sub
 
         ''' <summary>
-        '''  Saves the passed in String to the clipboard.
+        '''  Saves the passed in data to the clipboard as JSON that contains <typeparamref name="T"/>.
+        ''' </summary>
+        ''' <param name="data">The data to be saved.</param>
+        Public Sub SetDataAsJson(Of T)(data As T)
+            Clipboard.SetDataAsJson(data)
+        End Sub
+
+        ''' <summary>
+        '''  Saves the passed in <see cref="String" /> to the clipboard.
         ''' </summary>
         ''' <param name="text">The <see cref="String"/> to save.</param>
         Public Sub SetText(text As String)
