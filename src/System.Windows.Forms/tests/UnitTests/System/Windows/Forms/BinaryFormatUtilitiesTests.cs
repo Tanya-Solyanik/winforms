@@ -36,8 +36,20 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     private object? ReadObjectFromStream(bool restrictDeserialization = false)
     {
         _stream.Position = 0;
-        return Utilities.ReadObjectFromStream(_stream, restrictDeserialization);
+        return Utilities.ReadObjectFromStream<object>(
+            _stream,
+            DataObject.GetDataResolver(),
+            restrictDeserialization,
+            legacyMode: true);
     }
+
+#if false // TanyaSo
+    private object? TryReadObjectFromStream<T>(Func<TypeName, Type> resolver)
+    {
+        _stream.Position = 0;
+        return Utilities.ReadObjectFromStream<object>(_stream, resolver, restrictDeserialization: false, legacyMode: false);
+    }
+#endif
 
     // Primitive types as defined by the NRBF spec.
     // https://learn.microsoft.com/dotnet/api/system.formats.nrbf.primitivetyperecord
@@ -167,7 +179,9 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         new List<object>(),
         new List<nint>(),
-        new List<(int, int)>()
+        new List<(int, int)>(),
+        new List<nint> { nint.MinValue, nint.MaxValue },
+        new List<nuint> { nuint.MinValue, nuint.MaxValue }
     };
 
     [Theory]
@@ -292,6 +306,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
         ((Action)(() => WriteObjectToStream(value))).Should().Throw<NotSupportedException>();
 
         using (BinaryFormatterScope scope = new(enable: true))
+        using (BinaryFormatterInClipboardScope clipboardScope = new(enable: true))
         {
             WriteObjectToStream(value);
             ReadObjectFromStream().Should().BeEquivalentTo(value);
@@ -307,6 +322,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
         ((Action)(() => WriteObjectToStream(value, restrictSerialization: true))).Should().Throw<NotSupportedException>();
 
         using BinaryFormatterScope scope = new(enable: true);
+        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
         ((Action)(() => WriteObjectToStream(value, restrictSerialization: true))).Should().Throw<SerializationException>();
     }
 }

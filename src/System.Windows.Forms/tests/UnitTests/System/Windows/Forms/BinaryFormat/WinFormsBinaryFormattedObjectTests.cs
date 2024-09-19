@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using System.Collections;
 using System.ComponentModel;
 using System.Drawing;
 using System.Formats.Nrbf;
@@ -110,6 +111,300 @@ public class WinFormsBinaryFormattedObjectTests
         newList.Images.Count.Should().Be(1);
         Bitmap newImage = (Bitmap)newList.Images[0];
         newImage.Size.Should().Be(sourceList.Images[0].Size);
+    }
+
+    private static void IsAssignableTo<T>(T data)
+    {
+        SerializationRecord record = data.SerializeAndDecode();
+        record.IsAssignableTo<T>().Should().BeTrue();
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_int()
+    {
+        int data = 101;
+        IsAssignableTo(data);
+
+        int? data1 = 101;
+        IsAssignableTo(data1);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_intArray()
+    {
+        int[] simple = [101, 202, 303];
+        IsAssignableTo(simple);
+
+        int?[] nullableElements = [101, 202, 303];
+        IsAssignableTo(nullableElements);
+
+        int[,] multidimensional = new int[3, 2]
+        {
+            {1,2},
+            {2,3},
+            {4,5}
+        };
+        IsAssignableTo(multidimensional);
+
+        int?[,] multidimensionalNullable = new int?[3, 2]
+        {
+            {1,2},
+            {2,3},
+            {4,5}
+        };
+        IsAssignableTo(multidimensionalNullable);
+
+        int[][] jagged =
+        [
+            [1, 2, 3, 4],
+            [5, 6, 7, 8, 9],
+            [10, 11, 12],
+        ];
+        IsAssignableTo(jagged);
+
+        int?[][] jaggedNullable =
+        [
+            [1, 2, 3, 4],
+            [5, 6, 7, 8, 9],
+            [10, 11, 12],
+        ];
+        IsAssignableTo(jaggedNullable);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_string()
+    {
+        string data = "text";
+        IsAssignableTo(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_stringArray()
+    {
+        string[] data = ["text1", "text2", "text3"];
+        IsAssignableTo(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_Bitmap()
+    {
+        using Bitmap data = new Bitmap(10, 10);
+        // a .NET Framework version of Bitmap.
+        IsAssignableTo(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_BitmapArray()
+    {
+        using Bitmap bitmap1 = new(16, 16);
+        using Bitmap bitmap2 = new(10, 10);
+        Bitmap[] data = [bitmap1, bitmap2];
+        IsAssignableTo(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_DayOfWeek()
+    {
+        DayOfWeek data = DayOfWeek.Sunday;
+        IsAssignableTo(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_Color()
+    {
+        Color data = Color.Red;
+        IsAssignableTo(data);
+    }
+
+    [Theory]
+    [MemberData(nameof(Object_TestData))]
+    public void SerializationRecord_IsAssignableTo_object(object data)
+    {
+        IsAssignableTo(data);
+    }
+
+    public static TheoryData<object> Object_TestData() => new()
+    {
+        new(),
+        "text",
+        101
+    };
+
+    // TanyaSo: tests with a resolver TestData[]
+
+    [Theory]
+    [MemberData(nameof(ObjectArray_TestData))]
+    public void SerializationRecord_IsAssignableTo_objectArray(object[] data)
+    {
+        IsAssignableTo(data);
+    }
+
+    public static TheoryData<object[]> ObjectArray_TestData() => new()
+    {
+        new object[] { null! },
+        new object[] { new() },
+        new object[] { "text" }
+    };
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_Point()
+    {
+        Point data = new() { X = 1, Y = 1 };
+        IsAssignableTo(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_IsAssignableTo_PointArray()
+    {
+        Point[] data = [new(1, 2), new(3, 4)];
+        IsAssignableTo(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_Fail()
+    {
+        FileNotFoundException data = new();
+        SerializationRecord record = data.SerializeAndDecode();
+        record.TryGetCommonObject<Control>(out object? deserialized).Should().BeFalse();
+        deserialized.Should().BeNull();
+    }
+
+    private static void TryGetCommonObject<T>(T data)
+    {
+        SerializationRecord record = data.SerializeAndDecode();
+        record.TryGetCommonObject<T>(out object? deserialized).Should().BeTrue();
+        deserialized.Should().Be(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_String() =>
+        TryGetCommonObject("text");
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_int() =>
+        TryGetCommonObject(int.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_Int_Nullable()
+    {
+        int? data = 1;
+        SerializationRecord record = data.SerializeAndDecode();
+        record.TryGetCommonObject<int?>(out object? deserialized).Should().BeTrue();
+        deserialized.Should().Be(data);
+    }
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_uint() =>
+        TryGetCommonObject(uint.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_long() =>
+        TryGetCommonObject(long.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_ulong() =>
+        TryGetCommonObject(ulong.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_short() =>
+        TryGetCommonObject(short.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_ushort() =>
+        TryGetCommonObject(ushort.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_sbyte() =>
+        TryGetCommonObject(sbyte.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_byte() =>
+        TryGetCommonObject(byte.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_bool() =>
+        TryGetCommonObject(true);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_float() =>
+        TryGetCommonObject(float.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_double() =>
+        TryGetCommonObject(double.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_char() =>
+        TryGetCommonObject(char.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_TimeSpan() =>
+        TryGetCommonObject(TimeSpan.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_DateTime() =>
+        TryGetCommonObject(DateTime.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_decimal() =>
+        TryGetCommonObject(decimal.MaxValue);
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_nint() =>
+        TryGetCommonObject((nint)(-1));
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_nuint() =>
+        TryGetCommonObject((nuint)1);
+
+    private void TryGetCommonObject_List<T>(IList list)
+    {
+        SerializationRecord record = list.SerializeAndDecode();
+        record.TryGetCommonObject<T>(out object? deserialized).Should().BeTrue();
+        deserialized.Should().BeEquivalentTo(list);
+    }
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_List() =>
+        TryGetCommonObject_List<List<int>>(new List<int> { 1, 2, 3 });
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_List_Fail()
+    {
+        List<int> list = new() { 1, 2, 3 };
+        SerializationRecord record = list.SerializeAndDecode();
+        record.TryGetCommonObject<object>(out object? deserialized).Should().BeFalse();
+        deserialized.Should().BeNull();
+    }
+
+    private void TryGetCommonObject_Array<T>(Array array)
+    {
+        SerializationRecord record = array.SerializeAndDecode();
+        record.TryGetCommonObject<T>(out object? deserialized).Should().BeTrue();
+        deserialized.Should().BeEquivalentTo(array);
+    }
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_Array_Int()
+    {
+        int[] array = [1, 2, 3];
+        TryGetCommonObject_Array<int[]>(array);
+    }
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_Array_String()
+    {
+        string?[] array = ["thing1", "thing2", null];
+        TryGetCommonObject_Array<string?[]>(array);
+    }
+
+    [Fact]
+    public void SerializationRecord_TryGetCommonObject_Array_Fail()
+    {
+        Point[] array = [new Point(1, 2)];
+        SerializationRecord record = array.SerializeAndDecode();
+        record.TryGetCommonObject<Point[]>(out object? deserialized).Should().BeFalse();
+        deserialized.Should().BeNull();
     }
 
     [Theory]
