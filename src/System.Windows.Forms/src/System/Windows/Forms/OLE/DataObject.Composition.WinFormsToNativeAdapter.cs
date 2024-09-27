@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.Serialization;
 using System.Text;
 using Windows.Win32.System.Com;
@@ -29,7 +30,7 @@ public unsafe partial class DataObject
             }
 
             /// <summary>
-            ///  Returns true if the tymed is useable.
+            ///  Returns true if the tymed is usable.
             /// </summary>
             private static bool GetTymedUseable(TYMED tymed) => (tymed & AllowedTymeds) != 0;
 
@@ -54,7 +55,7 @@ public unsafe partial class DataObject
                         return HRESULT.S_OK;
                     }
 
-                    if (_dataObject.GetData(formatName) is DragDropFormat dragDropFormat)
+                    if (_dataObject.TryGetData(formatName, DragDropFormatResolver, autoConvert: false, out DragDropFormat? dragDropFormat))
                     {
                         *pmedium = dragDropFormat.GetData();
                         return HRESULT.S_OK;
@@ -116,7 +117,9 @@ public unsafe partial class DataObject
                     return HRESULT.DV_E_FORMATETC;
                 }
 
+#pragma warning disable WFDEV006  // Type or member is obsolete
                 object? data = _dataObject.GetData(format);
+#pragma warning restore WFDEV006
 
                 if (((TYMED)pformatetc->tymed).HasFlag(TYMED.TYMED_HGLOBAL))
                 {
@@ -235,7 +238,8 @@ public unsafe partial class DataObject
                 if (DragDropHelper.IsInDragLoopFormat(*pformatetc) || DragDropHelper.IsInDragLoop(_dataObject))
                 {
                     string formatName = DataFormats.GetFormat(pformatetc->cfFormat).Name;
-                    if (_dataObject.GetDataPresent(formatName) && _dataObject.GetData(formatName) is DragDropFormat dragDropFormat)
+                    if (_dataObject.GetDataPresent(formatName)
+                        && _dataObject.TryGetData(formatName, DragDropFormatResolver, autoConvert: false, out DragDropFormat? dragDropFormat))
                     {
                         dragDropFormat.RefreshData(pformatetc->cfFormat, *pmedium, !fRelease);
                     }
@@ -527,6 +531,30 @@ public unsafe partial class DataObject
                 }
 
                 return HRESULT.S_OK;
+            }
+
+            private static Type DragDropFormatResolver(TypeName typeName)
+            {
+                Type[] allowedTypes =
+                [
+                    typeof(DragDropFormat),
+                    typeof(STGMEDIUM)  // TanyaSo  -- this type has a union
+                ];
+
+                foreach (Type type in allowedTypes)
+                {
+                    TypeName parsed = TypeName.Parse($"{type.FullName}, {type.Assembly.FullName}");
+
+                    // Namespace-qualified type name.
+                    if (typeName.FullName == parsed.FullName
+                        // Ignore version, culture, and public key token in the assembly name.
+                        && typeName.AssemblyName?.Name == parsed.AssemblyName?.Name)
+                    {
+                        return type;
+                    }
+                }
+
+                throw new NotSupportedException();
             }
         }
     }

@@ -24,4 +24,10 @@ internal static class Obsoletions
 
     internal const string FormOnClosingClosedMessage = "Form.OnClosing, Form.OnClosed and the corresponding events are obsolete. Use Form.OnFormClosing, Form.OnFormClosed, Form.FormClosing and Form.FormClosed instead.";
     internal const string FormOnClosingClosedDiagnosticId = "WFDEV004";
+
+    internal const string ClipboardGetDataMessage = "`Clipboard.GetData(string)` method is obsolete. Use `Clipboard.TryGetData<T>` instead.";
+    internal const string ClipboardGetDataDiagnosticId = "WFDEV005";
+
+    internal const string DataObjectGetDataMessage = "`IDataObject.GetData` methods are obsolete. Implement `IDataObject.TryGetData<T>` instead.";
+    internal const string DataObjectGetDataDiagnosticId = "WFDEV006";
 }

@@ -7,7 +7,10 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Windows.Forms.Primitives;
 using Windows.Win32.System.Ole;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
@@ -19,6 +22,9 @@ namespace System.Windows.Forms.Tests;
 [Collection("Sequential")]
 public class ClipboardTests
 {
+#pragma warning disable WFDEV005 // Type or member is obsolete
+#pragma warning disable WFDEV006 // Type or member is obsolete
+
     [WinFormsFact]
     public void Clipboard_SetText_InvokeString_GetReturnsExpected()
     {
@@ -157,10 +163,41 @@ public class ClipboardTests
         byte[] audioBytes = [1, 2, 3];
         Clipboard.SetAudio(audioBytes);
 
+        Clipboard.TryGetData(DataFormats.WaveAudio, NotSupportedResolver, out MemoryStream? data).Should().BeTrue();
+        data!.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out data).Should().BeTrue();
+        data!.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, NotSupportedResolver, out Stream? unboundedData).Should().BeTrue();
+        unboundedData.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out unboundedData).Should().BeTrue();
+        unboundedData.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+
+        Clipboard.TryGetData(DataFormats.WaveAudio, out data).Should().BeTrue();
+        data!.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, out unboundedData).Should().BeTrue();
+        unboundedData.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+
         Clipboard.GetAudioStream().Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
         Clipboard.GetData(DataFormats.WaveAudio).Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
         Clipboard.ContainsAudio().Should().BeTrue();
         Clipboard.ContainsData(DataFormats.WaveAudio).Should().BeTrue();
+    }
+
+    private static Type WaveAudioResolver(TypeName typeName)
+    {
+        Type[] knownTypes = [typeof(MemoryStream), typeof(Stream)];
+
+        foreach (Type type in knownTypes)
+        {
+            TypeName parsed = TypeName.Parse($"{type.FullName}, {type.Assembly.FullName}");
+
+            if (typeName.FullName == parsed.FullName && typeName.AssemblyName?.Name == parsed.AssemblyName?.Name)
+            {
+                return type;
+            }
+        }
+
+        throw new NotSupportedException();
     }
 
     [WinFormsFact]
@@ -169,8 +206,17 @@ public class ClipboardTests
         byte[] audioBytes = Array.Empty<byte>();
         Clipboard.SetAudio(audioBytes);
 
+        Clipboard.TryGetData(DataFormats.WaveAudio, WaveAudioResolver, out MemoryStream? data).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out data).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, WaveAudioResolver, out Stream? unboundedData).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out unboundedData).Should().BeFalse();
+
+        Clipboard.TryGetData(DataFormats.WaveAudio, out data).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, out unboundedData).Should().BeFalse();
+
         Clipboard.GetAudioStream().Should().BeNull();
         Clipboard.GetData(DataFormats.WaveAudio).Should().BeNull();
+
         Clipboard.ContainsAudio().Should().BeTrue();
         Clipboard.ContainsData(DataFormats.WaveAudio).Should().BeTrue();
     }
@@ -189,8 +235,23 @@ public class ClipboardTests
         using MemoryStream audioStream = new(audioBytes);
         Clipboard.SetAudio(audioStream);
 
+        Clipboard.TryGetData(DataFormats.WaveAudio, WaveAudioResolver, out MemoryStream? data).Should().BeTrue();
+        data!.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out data).Should().BeTrue();
+        data.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, WaveAudioResolver, out Stream? unboundedData).Should().BeTrue();
+        unboundedData.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out unboundedData).Should().BeTrue();
+        unboundedData.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+
+        Clipboard.TryGetData(DataFormats.WaveAudio, out data).Should().BeTrue();
+        data.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+        Clipboard.TryGetData(DataFormats.WaveAudio, out unboundedData).Should().BeTrue();
+        unboundedData.Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+
         Clipboard.GetAudioStream().Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
         Clipboard.GetData(DataFormats.WaveAudio).Should().BeOfType<MemoryStream>().Which.ToArray().Should().Equal(audioBytes);
+
         Clipboard.ContainsAudio().Should().BeTrue();
         Clipboard.ContainsData(DataFormats.WaveAudio).Should().BeTrue();
     }
@@ -200,6 +261,14 @@ public class ClipboardTests
     {
         using MemoryStream audioStream = new();
         Clipboard.SetAudio(audioStream);
+
+        Clipboard.TryGetData(DataFormats.WaveAudio, WaveAudioResolver, out MemoryStream? data).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out data).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, WaveAudioResolver, out Stream? unboundedData).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, resolver: null!, out unboundedData).Should().BeFalse();
+
+        Clipboard.TryGetData(DataFormats.WaveAudio, out data).Should().BeFalse();
+        Clipboard.TryGetData(DataFormats.WaveAudio, out unboundedData).Should().BeFalse();
 
         Clipboard.GetAudioStream().Should().BeNull();
         Clipboard.GetData(DataFormats.WaveAudio).Should().BeNull();
@@ -220,6 +289,7 @@ public class ClipboardTests
     public void Clipboard_SetData_Invoke_GetReturnsExpected(string format, object? data)
     {
         Clipboard.SetData(format, data!);
+
         Clipboard.GetData(format).Should().Be(data);
         Clipboard.ContainsData(format).Should().BeTrue();
     }
@@ -252,6 +322,7 @@ public class ClipboardTests
         var dataObject = Clipboard.GetDataObject();
         Assert.NotNull(dataObject);
         dataObject.GetData(data.GetType()).Should().Be(data);
+
         Clipboard.ContainsData(data.GetType().FullName).Should().BeTrue();
     }
 
@@ -266,6 +337,7 @@ public class ClipboardTests
         var actual = Clipboard.GetDataObject();
         Assert.NotNull(actual);
         actual.GetData(data.GetType()).Should().Be(data);
+
         Clipboard.ContainsData(data.GetType().FullName).Should().BeTrue();
     }
 
@@ -423,7 +495,8 @@ public class ClipboardTests
         using Bitmap bitmap = new(10, 10);
         bitmap.SetPixel(1, 2, Color.FromArgb(0x01, 0x02, 0x03, 0x04));
         Clipboard.SetImage(bitmap);
-        Bitmap result = Assert.IsType<Bitmap>(Clipboard.GetImage());
+
+        var result = Clipboard.GetImage().Should().BeOfType<Bitmap>().Which;
         result.Size.Should().Be(bitmap.Size);
         result.GetPixel(1, 2).Should().Be(Color.FromArgb(0xFF, 0xD2, 0xD2, 0xD2));
         Clipboard.ContainsImage().Should().BeTrue();
@@ -432,19 +505,38 @@ public class ClipboardTests
     [WinFormsFact]
     public void Clipboard_SetImage_InvokeMetafile_GetReturnsExpected()
     {
-        using Metafile metafile = new("bitmaps/telescope_01.wmf");
-        Clipboard.SetImage(metafile);
-        Clipboard.GetImage().Should().BeNull();
-        Clipboard.ContainsImage().Should().BeTrue();
+        try
+        {
+            using Metafile metafile = new("bitmaps/telescope_01.wmf");
+            using BinaryFormatterScope scope = new(enable: true);
+            // SetImage fails silently and corrupts the clipboard state for anything other than a bitmap.
+            Clipboard.SetImage(metafile);
+
+            Clipboard.GetImage().Should().BeNull();
+            Clipboard.ContainsImage().Should().BeTrue();
+        }
+        finally
+        {
+            Clipboard.Clear();
+        }
     }
 
     [WinFormsFact]
     public void Clipboard_SetImage_InvokeEnhancedMetafile_GetReturnsExpected()
     {
-        using Metafile metafile = new("bitmaps/milkmateya01.emf");
-        Clipboard.SetImage(metafile);
-        Clipboard.GetImage().Should().BeNull();
-        Clipboard.ContainsImage().Should().BeTrue();
+        try
+        {
+            using Metafile metafile = new("bitmaps/milkmateya01.emf");
+            // SetImage fails silently and corrupts the clipboard for everything other than a bitmap.
+            Clipboard.SetImage(metafile);
+
+            Clipboard.GetImage().Should().BeNull();
+            Clipboard.ContainsImage().Should().BeTrue();
+        }
+        finally
+        {
+            Clipboard.Clear();
+        }
     }
 
     [WinFormsFact]
@@ -459,6 +551,7 @@ public class ClipboardTests
     public void Clipboard_SetText_InvokeStringTextDataFormat_GetReturnsExpected(TextDataFormat format)
     {
         Clipboard.SetText("text", format);
+
         Clipboard.GetText(format).Should().Be("text");
         Clipboard.ContainsText(format).Should().BeTrue();
     }
@@ -616,5 +709,169 @@ public class ClipboardTests
 
         DataObject dataObject = Clipboard.GetDataObject().Should().BeOfType<DataObject>().Which;
         dataObject.GetData(DataFormats.Text).Should().Be(testString);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_AppContextSwitch()
+    {
+        LocalAppContextSwitches.ClipboardEnableUnsafeBinaryFormatterDeserialization.Should().BeFalse();
+
+        using (BinaryFormatterInClipboardScope scope = new(enable: true))
+        {
+            LocalAppContextSwitches.ClipboardEnableUnsafeBinaryFormatterDeserialization.Should().BeTrue();
+        }
+
+        LocalAppContextSwitches.ClipboardEnableUnsafeBinaryFormatterDeserialization.Should().BeFalse();
+
+        using (BinaryFormatterInClipboardScope scope = new(enable: false))
+        {
+            LocalAppContextSwitches.ClipboardEnableUnsafeBinaryFormatterDeserialization.Should().BeFalse();
+        }
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetOf_int_ReturnsExpected()
+    {
+        int expected = 101;
+        using (BinaryFormatterScope scope = new(enable: true))
+        {
+            Clipboard.SetData("TestData", expected);
+        }
+
+        Clipboard.TryGetData("TestData", out int? data).Should().BeTrue();
+        data.Should().Be(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetData_PointArray_ReturnsExpected()
+    {
+        Point[] expected = [new Point(1, 2), new Point(3, 4)];
+        using (BinaryFormatterScope scope = new(enable: true))
+        {
+            Clipboard.SetData(format: "TestData", expected);
+        }
+
+        Clipboard.TryGetData(format: "TestData", NotSupportedResolver, out Point[]? data).Should().BeTrue();
+        data.Should().BeEquivalentTo(expected);
+        Clipboard.TryGetData(format: "TestData", out data).Should().BeTrue();
+        data.Should().BeEquivalentTo(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetOf_DataWithObjectField_ReturnsExpected()
+    {
+        DataWithObjectField expected = new("thing1", "thing2");
+        using (BinaryFormatterScope scope = new(enable: true))
+        {
+            Clipboard.SetData("TestData", expected);
+        }
+
+        Clipboard.TryGetData("TestData", NotSupportedResolver, out DataWithObjectField? data).Should().BeTrue();
+        data.Should().BeEquivalentTo(expected);
+        Clipboard.TryGetData("TestData", out data).Should().BeTrue();
+        data.Should().BeEquivalentTo(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetOf_UnboundedType_Throws()
+    {
+        object expected = new();
+        using BinaryFormatterScope scope = new(enable: true);
+        Clipboard.SetData("TestData", expected);
+
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetOf_RequiresBinaryFormatter_WithBinder_ReturnsExpected()
+    {
+        var expected = Array.CreateInstance(typeof(uint[]), [5], [1]);
+        using BinaryFormatterScope scope = new(enable: true);
+        Clipboard.SetData("TestData", expected);
+
+        ((Action)(() => Clipboard.TryGetData("TestData", UnboundedResolver, out Array? data))).Should()
+            .Throw<NotSupportedException>();
+        // Arrays of primitives don't require a binder to be deserialized by BinaryFormatter.
+        Clipboard.GetData("TestData").Should().BeEquivalentTo(expected);
+    }
+
+    private static Type UnboundedResolver(TypeName typeName) => null!;
+
+    [WinFormsFact]
+    public void Clipboard_TryGetOf_DataWithSerializationConstructor_ReturnsExpected()
+    {
+        DataWithSerializationConstructor expected = new();
+        using (BinaryFormatterScope scope = new(enable: true))
+        {
+            Clipboard.SetData("TestData", expected);
+        }
+
+        Clipboard.TryGetData("TestData", out DataWithSerializationConstructor? data).Should().BeTrue();
+        data.Should().Be(expected);
+    }
+
+    private static Type NotSupportedResolver(TypeName typeName) => throw new NotSupportedException();
+
+    [WinFormsFact]
+    public void Clipboard_CustomFormat_RoundsTrip_Object()
+    {
+        object expected = new();
+        using BinaryFormatterScope scope = new(enable: true);
+        Clipboard.SetData("TestData", expected);
+
+        var result = Clipboard.GetData("TestData"); // .Should().BeEquivalentTo(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_CustomFormat_RoundsTrip_Color()
+    {
+        Color expected = Color.Black;
+        using (BinaryFormatterScope scope = new(enable: true))
+        {
+            Clipboard.SetData("TestData", expected);
+        }
+
+        Clipboard.GetData("TestData").Should().Be(expected);
+    }
+
+    [Serializable]
+    private class DataWithObjectField
+    {
+        public DataWithObjectField(string text1, object object2)
+        {
+            _text1 = text1;
+            _object2 = object2;
+        }
+
+        public string _text1;
+        public object _object2;
+    }
+
+    [Serializable]
+    private class DataWithSerializationConstructor : ISerializable
+    {
+        private readonly int _number;
+        private static int s_counter;
+
+        public DataWithSerializationConstructor()
+        {
+            _number = ++s_counter;
+        }
+
+        // This method is called by the fluid assertion.
+        public override bool Equals(object? obj) => obj is DataWithSerializationConstructor other && _number == other._number;
+        public override int GetHashCode() => _number;
+
+        protected DataWithSerializationConstructor(SerializationInfo info, StreamingContext context)
+        {
+            _number = (info.GetValue(nameof(_number), typeof(int)) is int i)
+                ? i
+                : -1;
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue(nameof(_number), _number);
+        }
     }
 }

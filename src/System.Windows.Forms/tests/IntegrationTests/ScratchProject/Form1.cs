@@ -13,12 +13,12 @@ namespace ScratchProject;
 [DesignerCategory("Default")]
 public partial class Form1 : Form
 {
+#pragma warning disable WFDEV005
+
     public Form1()
     {
         InitializeComponent();
-
-        string a = typeof(int[]).Name;
-
+        string f = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         Action[] writers =
         [
             ClipboardSetData
