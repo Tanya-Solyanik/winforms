@@ -24,4 +24,34 @@ internal static class Obsoletions
 
     internal const string FormOnClosingClosedMessage = "Form.OnClosing, Form.OnClosed and the corresponding events are obsolete. Use Form.OnFormClosing, Form.OnFormClosed, Form.FormClosing and Form.FormClosed instead.";
     internal const string FormOnClosingClosedDiagnosticId = "WFDEV004";
+
+#pragma warning disable WFDEV005 // Type or member is obsolete
+    internal const string ContextMenuMessage = $"{nameof(ContextMenu)} has been deprecated. Use {nameof(ContextMenuStrip)} instead.";
+#pragma warning restore WFDEV005 // Type or member is obsolete
+    internal const string ContextMenuDiagnosticId = "WFDEV005";
+
+#pragma warning disable WFDEV006 // Type or member is obsolete
+    internal const string DataGridMessage = $"{nameof(DataGrid)} has been deprecated. Use {nameof(DataGridView)} instead.";
+#pragma warning restore WFDEV006 // Type or member is obsolete
+    internal const string DataGridDiagnosticId = "WFDEV006";
+
+#pragma warning disable WFDEV007 // Type or member is obsolete
+    internal const string MainMenuMessage = $"{nameof(MainMenu)} has been deprecated. Use {nameof(MenuStrip)} instead.";
+#pragma warning restore WFDEV007 // Type or member is obsolete
+    internal const string MainMenuDiagnosticId = "WFDEV007";
+
+#pragma warning disable WFDEV008 // Type or member is obsolete
+    internal const string MenuMessage = $"{nameof(Menu)} has been deprecated. Use {nameof(ToolStripDropDown)} and {nameof(ToolStripDropDownMenu)} instead.";
+#pragma warning restore WFDEV008 // Type or member is obsolete
+    internal const string MenuDiagnosticId = "WFDEV008";
+
+#pragma warning disable WFDEV009 // Type or member is obsolete
+    internal const string StatusBarMessage = $"{nameof(StatusBar)} has been deprecated. Use {nameof(StatusStrip)} instead.";
+#pragma warning restore WFDEV009 // Type or member is obsolete
+    internal const string StatusBarDiagnosticId = "WFDEV009";
+
+#pragma warning disable WFDEV010 // Type or member is obsolete
+    internal const string ToolBarMessage = $"{nameof(ToolBar)} has been deprecated. Use {nameof(ToolStrip)} instead.";
+#pragma warning restore WFDEV010 // Type or member is obsolete
+    internal const string ToolBarDiagnosticId = "WFDEV010";
 }
