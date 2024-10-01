@@ -10,51 +10,85 @@ using static System.Windows.Forms.DataGrid;
 namespace WinFormsControlsTest;
 
 /// <summary>
-/// This is added to test binary compatibility only, this compiles but does not run.
+///  This is added to test binary compatibility only, this compiles but does not run.
 /// </summary>
 // Obsolete controls test for https://github.com/dotnet/winforms/issues/3783
 [DesignerCategory("code")]
 public partial class ObsoleteControls : Form
 {
     private bool _tablesAlreadyAdded;
+    private MainMenu? _mainMenu;
 
     public ObsoleteControls()
     {
         try
         {
+            // This code is only valid when redirected to NET48.
             InitializeComponent();
-            CreateMainMenu();
-            SetUp(); // This code is only valid when redirected to NET48.
         }
         catch (PlatformNotSupportedException ex)
         {
-            labTitle.Text = ex.Message;
+            errorMessage.Text = $"\r\n{ex.Message}";
+        }
+
+        try
+        {
+            SetUp();
+        }
+        catch (PlatformNotSupportedException ex)
+        {
+            errorMessage.Text += $"\r\n{ex.Message}";
         }
     }
 
     private void CreateMainMenu()
     {
-        MainMenu mainMenu = new();
-        MenuItem fileMenuItem = new MenuItem("File", new EventHandler(menuItem2_Click));
-        mainMenu.MenuItems.Add(fileMenuItem);
+        if (_mainMenu is not null)
+        {
+            return;
+        }
+
+        _mainMenu = new();
+        MenuItem fileMenuItem = new("File", new EventHandler(menuItem2_Click));
+        _mainMenu.MenuItems.Add(fileMenuItem);
+        components.Add(_mainMenu);
     }
 
-    private void menuItem1_Click(object sender, System.EventArgs e) => MessageBox.Show("New menu item clicked", "DataGrid");
+    private void menuItem1_Click(object sender, EventArgs e) => MessageBox.Show("New menu item clicked", "DataGrid");
 
-    private void menuItem2_Click(object sender, System.EventArgs e) => MessageBox.Show("New menu item clicked", "MainMenu");
+    private void menuItem2_Click(object sender, EventArgs e) => MessageBox.Show("New menu item clicked", "MainMenu");
 
-    private void button1_Click(object sender, System.EventArgs e)
+    private void button1_Click(object sender, EventArgs e)
     {
         if (_tablesAlreadyAdded)
             return;
 
-        AddCustomDataTableStyle();
+        try
+        {
+            AddCustomDataTableStyle();
+        }
+        catch (PlatformNotSupportedException ex)
+        {
+            errorMessage.Text += $"\r\n{ex.Message}";
+        }
     }
 
-    private void button2_Click(object sender, System.EventArgs e)
+    private void button2_Click(object sender, EventArgs e)
     {
         BindingManagerBase bmGrid = BindingContext[myDataSet, "Customers"];
-        MessageBox.Show($"Current BindingManager Position: { bmGrid.Position }");
+        MessageBox.Show($"Current BindingManager Position: {bmGrid.Position}");
+    }
+
+    private void button3_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            CreateMainMenu();
+        }
+        catch (PlatformNotSupportedException ex)
+        {
+            errorMessage.Text += $"\r\n{ex.Message}";
+        }
     }
 
     private void Grid_MouseUp(object sender, MouseEventArgs e)
@@ -65,7 +99,7 @@ public partial class ObsoleteControls : Form
         }
         catch (PlatformNotSupportedException ex)
         {
-            labTitle.Text = ex.Message;
+            errorMessage.Text = ex.Message;
         }
     }
 
@@ -143,7 +177,7 @@ public partial class ObsoleteControls : Form
         }
         catch (PlatformNotSupportedException ex)
         {
-            labTitle.Text = ex.Message;
+            errorMessage.Text = ex.Message;
         }
     }
 

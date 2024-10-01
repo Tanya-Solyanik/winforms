@@ -37,7 +37,8 @@ partial class ObsoleteControls
         components = new System.ComponentModel.Container();
         button1 = new System.Windows.Forms.Button();
         button2 = new System.Windows.Forms.Button();
-        labTitle = new System.Windows.Forms.Label();
+        button3 = new System.Windows.Forms.Button();
+        errorMessage = new System.Windows.Forms.Label();
         dataGrid1 = new System.Windows.Forms.DataGrid();
         contextMenu1 = new System.Windows.Forms.ContextMenu();
         menuItem1 = new System.Windows.Forms.MenuItem();
@@ -50,35 +51,54 @@ partial class ObsoleteControls
         SuspendLayout();
         // 
         // button1
-        // 
+        //
         button1.Location = new Point(24, 16);
-        button1.Size = new System.Drawing.Size(120, 24);
+        button1.Size = new System.Drawing.Size(350, 45);
         button1.Text = "Change Appearance";
-        button1.Click += new System.EventHandler(button1_Click);
+        button1.Click += button1_Click;
         // 
         // button2
-        // 
-        button2.Location = new Point(150, 16);
-        button2.Size = new System.Drawing.Size(120, 24);
+        //
+        button2.Location = new Point(390, 16);
+        button2.Size = new System.Drawing.Size(350, 45);
         button2.Text = "Get Binding Manager";
-        button2.Click += new System.EventHandler(button2_Click);
+        button2.Click += button2_Click;
         // 
-        // labTitle
+        // button3
+        //
+        button3.Location = new Point(750, 16);
+        button3.Size = new System.Drawing.Size(350, 45);
+        button3.Text = "ContextMenu";
+        button3.Click += button3_Click;
         // 
-        labTitle.AutoSize = true;
-        labTitle.Location = new System.Drawing.Point(469, 33);
-        labTitle.Name = "label1";
-        labTitle.Size = new System.Drawing.Size(51, 20);
-        labTitle.TabIndex = 3;
-        labTitle.Text = "label1";
+        // errorMessage
+        // 
+        errorMessage.AutoSize = false;
+        errorMessage.Location = new System.Drawing.Point(24, 62);
+        errorMessage.Name = "errorMessage";
+        errorMessage.Size = new System.Drawing.Size(787, 546);
+        errorMessage.TabIndex = 3;
+        errorMessage.Text = "";
+        // 
+        // Form1
+        // 
+        AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+        AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        ClientSize = new System.Drawing.Size(1300, 450);
+        Controls.Add(button1);
+        Controls.Add(button2);
+        Controls.Add(button3);
+        Controls.Add(errorMessage);
+        Name = "Obsolete-DataGrid";
+        Text = "Obsolete-DataGrid";
         // 
         // dataGrid1
         // 
         dataGrid1.Location = new Point(24, 50);
         dataGrid1.Size = new Size(300, 200);
         dataGrid1.CaptionText = "Microsoft DataGrid Control";
-        dataGrid1.MouseUp += new MouseEventHandler(Grid_MouseUp);
-        // dataGrid1.ContextMenu = contextMenu1;
+        dataGrid1.MouseUp += Grid_MouseUp;
+        dataGrid1.ContextMenu = contextMenu1;
         // 
         // contextMenu1
         // 
@@ -89,7 +109,7 @@ partial class ObsoleteControls
         // 
         menuItem1.Index = 0;
         menuItem1.Text = "New";
-        menuItem1.Click += new System.EventHandler(menuItem1_Click);
+        menuItem1.Click += menuItem1_Click;
         //
         // toolBar1
         //
@@ -106,18 +126,8 @@ partial class ObsoleteControls
         panel1.Text = "Ready";
         panel2.Text = "Loading...";
         statusBar1.Panels.AddRange(new System.Windows.Forms.StatusBarPanel[] { panel1, panel2 });
-        // 
-        // Form1
-        // 
-        AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-        AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        ClientSize = new System.Drawing.Size(800, 450);
-        Controls.Add(button1);
-        Controls.Add(button2);
-        Controls.Add(labTitle);
+
         Controls.Add(dataGrid1);
-        Name = "Obsolete-DataGrid";
-        Text = "Obsolete-DataGrid";
         ResumeLayout(false);
     }
 
@@ -125,6 +135,7 @@ partial class ObsoleteControls
 
     private System.Windows.Forms.Button button1;
     private System.Windows.Forms.Button button2;
+    private System.Windows.Forms.Button button3;
     private System.Windows.Forms.DataGrid dataGrid1;
     private System.Data.DataSet myDataSet;
     private System.Windows.Forms.ContextMenu contextMenu1;
@@ -135,6 +146,6 @@ partial class ObsoleteControls
     private System.Windows.Forms.StatusBar statusBar1;
     private System.Windows.Forms.StatusBarPanel panel1;
     private System.Windows.Forms.StatusBarPanel panel2;
-    private System.Windows.Forms.Label labTitle;
+    private System.Windows.Forms.Label errorMessage;
 #pragma warning restore WFDEV005, WFDEV006, WFDEV007, WFDEV008, WFDEV009, WFDEV010
 }

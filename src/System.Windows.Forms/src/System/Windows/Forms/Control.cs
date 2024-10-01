@@ -12963,7 +12963,6 @@ public unsafe partial class Control :
         remove => throw new PlatformNotSupportedException();
     }
 
-    [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     protected virtual void OnContextMenuChanged(EventArgs e) => throw new PlatformNotSupportedException();
 }
