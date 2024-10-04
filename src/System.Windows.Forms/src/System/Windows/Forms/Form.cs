@@ -7328,4 +7328,23 @@ public partial class Form : ContainerControl
                 break;
         }
     }
+
+#nullable disable
+#pragma warning disable WFDEV007 // Type or member is obsolete
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public MainMenu Menu
+    {
+        get;
+        set;
+    }
+
+    [Browsable(false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public MainMenu MergedMenu
+    {
+        get;
+    }
+#pragma warning restore WFDEV007
+#nullable enable
 }
