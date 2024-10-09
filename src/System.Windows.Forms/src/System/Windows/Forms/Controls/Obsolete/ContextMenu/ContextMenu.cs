@@ -14,6 +14,7 @@ namespace System.Windows.Forms;
     DiagnosticId = Obsoletions.ContextMenuDiagnosticId,
     UrlFormat = Obsoletions.SharedUrlFormat)]
 [EditorBrowsable(EditorBrowsableState.Never)]
+[Browsable(false)]
 public class ContextMenu : Menu
 {
     public ContextMenu() : base(items: null) => throw new PlatformNotSupportedException();

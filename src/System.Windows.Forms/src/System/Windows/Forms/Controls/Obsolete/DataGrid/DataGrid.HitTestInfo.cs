@@ -17,16 +17,12 @@ public partial class DataGrid
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class HitTestInfo
     {
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static HitTestInfo Nowhere => throw new PlatformNotSupportedException();
+
         public int Column => throw new PlatformNotSupportedException();
 
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public int Row => throw new PlatformNotSupportedException();
 
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public HitTestType Type => throw new PlatformNotSupportedException();
     }
 }
