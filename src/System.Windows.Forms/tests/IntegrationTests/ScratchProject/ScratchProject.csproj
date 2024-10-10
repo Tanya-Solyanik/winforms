@@ -14,10 +14,6 @@
     <ApplicationHighDpiMode>DpiUnaware</ApplicationHighDpiMode>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersPackageVersion)" />
-  </ItemGroup>
-
   <!-- Experiment with single file deployments
   https://learn.microsoft.com/dotnet/core/deploying/single-file/overview?tabs=cli#sample-project-file -->
   <PropertyGroup>

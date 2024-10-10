@@ -19,6 +19,7 @@ namespace System.Windows.Forms.Tests;
 // NB: doesn't require thread affinity
 public partial class DataObjectTests
 {
+    #pragma warning disable WFDEV006  // Type or member is obsolete
     private static readonly string[] s_restrictedClipboardFormats =
     [
         DataFormats.CommaSeparatedValue,
@@ -1064,8 +1065,8 @@ public partial class DataObjectTests
         ((Action)(() => dataObject.SetData(null))).Should().Throw<ArgumentNullException>().WithParameterName("data");
     }
 
-     public static TheoryData<string, string, bool, bool> SetData_StringObject_TheoryData()
-     {
+    public static TheoryData<string, string, bool, bool> SetData_StringObject_TheoryData()
+    {
         TheoryData<string, string, bool, bool> theoryData = new();
         foreach (string format in s_restrictedClipboardFormats)
         {
