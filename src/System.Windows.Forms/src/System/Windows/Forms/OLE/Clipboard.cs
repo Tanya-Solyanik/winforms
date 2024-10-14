@@ -297,12 +297,8 @@ public static class Clipboard
     ///
     ///      foreach (Type type in allowedTypes)
     ///      {
-    ///          TypeName parsed = TypeName.Parse($"{type.FullName}, {type.Assembly.FullName}");
-    ///
     ///          // Namespace-qualified type name.
-    ///          if (typeName.FullName == parsed.FullName
-    ///              // Ignore version, culture, and public key token in the assembly name.
-    ///              && typeName.AssemblyName?.Name == parsed.AssemblyName?.Name)
+    ///          if (typeName.FullName == type.FullName!)
     ///          {
     ///              return type;
     ///          }
@@ -335,7 +331,12 @@ public static class Clipboard
     {
         StringCollection result = [];
 
-        if (GetData(DataFormats.FileDropConstant, autoConvert: true) is string[] strings)
+        if (GetDataObject() is IDataObject dataObject
+            && dataObject.TryGetData(
+                DataFormats.FileDropConstant,
+                DataObject.NotSupportedResolver,
+                autoConvert: true,
+                out string[]? strings))
         {
             result.AddRange(strings);
         }

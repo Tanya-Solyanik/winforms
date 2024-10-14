@@ -76,7 +76,7 @@ public unsafe partial class DataObject
                 catch (Exception ex) when (!ex.IsCriticalException())
                 {
                     // Couldn't parse for some reason, let the BinaryFormatter try to handle the legacy invocation.
-                    if (legacyMode)
+                    if (legacyMode && LocalAppContextSwitches.ClipboardEnableUnsafeBinaryFormatterDeserialization)
                     {
                         stream.Position = startPosition;
                         return ReadObjectWithBinaryFormatter<T>(stream, binder);
@@ -87,11 +87,12 @@ public unsafe partial class DataObject
                     throw new NotSupportedException("Clipboard content can't be validated.", ex);
                 }
 
+                // For the new TryGet APIs, ensure that the stream contains the requested type.
                 if (!legacyMode && !record.TypeNameMatches<T>())
                 {
                     TypeName typeName = record.TypeName;
                     string assemblyName = typeName.AssemblyName?.FullName ?? string.Empty;
-                    // Binder throws if it can't resolve the type.
+                    // Binder throws if it can't resolve the type. - throws == return false
                     Type type = binder.BindToType(assemblyName, typeName.FullName)!;
                     if (!type.IsAssignableTo(typeof(T)))
                     {
@@ -111,6 +112,15 @@ public unsafe partial class DataObject
                 }
 
                 return null;
+            }
+
+            private static bool TypeNameIsAssignableToType(TypeName typeName, Type type, Func<Type, TypeName> resolver)
+            {
+                Type payloadType
+                try
+                {
+
+                }
             }
 
             private static object? ReadObjectWithBinaryFormatter<T>(MemoryStream stream, SerializationBinder binder)

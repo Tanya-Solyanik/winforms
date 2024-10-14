@@ -175,7 +175,7 @@ Namespace Microsoft.VisualBasic.MyServices
             Clipboard.SetData(format, data)
         End Sub
 
-        ''' <inheritdoc cref="Clipboard.SetDataAsJson(Of T)(String, T)"/>
+        ''' <inheritdoc cref="Clipboard.SetDataAsJson(Of T)(T)"/>
         Public Sub SetDataAsJson(Of T)(data As T)
             Clipboard.SetDataAsJson(data)
         End Sub
