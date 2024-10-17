@@ -97,4 +97,20 @@ internal static class WinFormsSerializationRecordExtensions
         record.TryGetResXObject(out value)
         || record.TryGetDrawingPrimitivesObject(out value)
         || record.TryGetObjectFromJson(out value);
+
+    public static bool TypeNameMatches<T>(this SerializationRecord record)
+    {
+        Type type = typeof(T);
+        if (record.TypeNameMatches(type))
+        {
+            return true;
+        }
+
+        if (Formatter.NullableUnwrap(type) is { } unwrapped && record.TypeNameMatches(unwrapped))
+        {
+            return true;
+        }
+
+        return false;
+    }
 }
