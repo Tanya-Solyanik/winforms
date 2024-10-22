@@ -94,11 +94,17 @@ public unsafe partial class DataObject
 
                 // For the new TryGet APIs, ensure that the stream contains the requested type,
                 // or type that can be assigned to the requested type.
-                if (!legacyMode
-                    && !record.TypeNameMatches<T>()
-                    && (resolver is null || !TypeNameIsAssignableToType(record.TypeName, typeof(T), resolver)))
+                if (!legacyMode && !restrictDeserialization && !record.TypeNameMatches<T>())
                 {
-                    return null;
+                    if (record.TryGetObjectFromJson<T>((Binder)binder, out object? data))
+                    {
+                        return data;
+                    }
+
+                    if (!((Binder)binder).TypeNameIsAssignableToType(record.TypeName, typeof(T)))
+                    {
+                        return null;
+                    }
                 }
 
                 if (record.TryGetCommonObject(out object? value))
@@ -113,23 +119,6 @@ public unsafe partial class DataObject
                 }
 
                 return null;
-            }
-
-            // TanyaSo: this does not special-case the NotSupported exception, but we probably want to always deserialize it.
-            private static bool TypeNameIsAssignableToType(TypeName typeName, Type type, Func<TypeName, Type> resolver)
-            {
-                Type? resolvedType = null;
-                try
-                {
-                    resolvedType = resolver(typeName);
-                }
-                catch (Exception ex) when (!ex.IsCriticalException())
-                {
-                    // If the type can't be resolved, we can't determine if it's assignable.
-                    return false;
-                }
-
-                return resolvedType?.IsAssignableTo(type) == true;
             }
 
             private static object? ReadObjectWithBinaryFormatter<T>(MemoryStream stream, SerializationBinder binder)

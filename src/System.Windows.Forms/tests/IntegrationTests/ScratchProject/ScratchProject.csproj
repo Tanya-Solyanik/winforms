@@ -10,7 +10,12 @@
     <!-- These are needed to suppress the localization step picked up from Arcade targets -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <UpdateXlfOnBuild>false</UpdateXlfOnBuild>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.Serialization.Formatters" />
+  </ItemGroup>
 
   <!-- Experiment with single file deployments
   https://learn.microsoft.com/dotnet/core/deploying/single-file/overview?tabs=cli#sample-project-file -->

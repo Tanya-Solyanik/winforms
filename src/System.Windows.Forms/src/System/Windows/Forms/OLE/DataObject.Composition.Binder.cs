@@ -153,8 +153,55 @@ public unsafe partial class DataObject
                 return type;
             }
 
+            // TanyaSo: this does not special-case the NotSupported exception, but we probably want to always deserialize it.
+            internal bool TypeNameIsAssignableToType(TypeName typeName, Type type)
+            {
+                if (_resolver is null)
+                {
+                    return false;
+                }
+
+                Type? resolvedType = null;
+                try
+                {
+                    resolvedType = _resolver(typeName);
+                }
+                catch (Exception ex) when (!ex.IsCriticalException())
+                {
+                    // If the type can't be resolved, we can't determine if it's assignable.
+                    return false;
+                }
+
+                return resolvedType?.IsAssignableTo(type) == true;
+            }
+
+            internal Type? ResolveType(TypeName typeName)
+            {
+                if (Matches(_type, typeName))
+                {
+                    return _type;
+                }
+
+                if (_resolver is null)
+                {
+                    return null;
+                }
+
+                Type? resolvedType = null;
+                try
+                {
+                    resolvedType = _resolver(typeName);
+                }
+                catch (Exception ex) when (!ex.IsCriticalException())
+                {
+                    return null;
+                }
+
+                return resolvedType;
+            }
+
             // Copied from https://github.com/dotnet/runtime/blob/79a71fc750652191eba18e19b3f98492e882cb5f/src/libraries/System.Formats.Nrbf/src/System/Formats/Nrbf/SerializationRecord.cs#L68
-            private static bool Matches(Type type, TypeName typeName)
+            internal static bool Matches(Type type, TypeName typeName)
             {
                 // We don't need to check for pointers and references to arrays,
                 // as it's impossible to serialize them with BF.
