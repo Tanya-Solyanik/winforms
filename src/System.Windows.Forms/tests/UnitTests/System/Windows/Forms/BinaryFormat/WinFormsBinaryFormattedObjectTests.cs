@@ -24,7 +24,7 @@ public class WinFormsBinaryFormattedObjectTests
     {
         Point point = new() { X = 1, Y = 1 };
         SerializationRecord format = point.SerializeAndDecode();
-        format.TryGetObjectFromJson(out _).Should().BeFalse();
+        format.TryGetObjectFromJson<Point>(null!, out _).Should().BeFalse();
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class WinFormsBinaryFormattedObjectTests
         stream.Position = 0;
         SerializationRecord binary = NrbfDecoder.Decode(stream);
         binary.TypeName.AssemblyName!.FullName.Should().Be(IJsonData.CustomAssemblyName);
-        binary.TryGetObjectFromJson(out object? result).Should().BeTrue();
+        binary.TryGetObjectFromJson<Point>(null!, out object? result).Should().BeTrue();
         Point deserialized = result.Should().BeOfType<Point>().Which;
         deserialized.Should().BeEquivalentTo(point);
     }

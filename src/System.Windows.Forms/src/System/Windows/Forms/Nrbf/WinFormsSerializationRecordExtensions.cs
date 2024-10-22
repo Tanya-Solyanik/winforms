@@ -59,7 +59,7 @@ internal static class WinFormsSerializationRecordExtensions
     /// <summary>
     ///  Tries to deserialize this object if it was serialized as JSON.
     /// </summary>
-    public static bool TryGetObjectFromJson(this SerializationRecord record, out object? @object)
+    public static bool TryGetObjectFromJson<T>(this SerializationRecord record, DataObject.Composition.Binder binder, out object? @object)
     {
         @object = null;
 
@@ -72,15 +72,21 @@ internal static class WinFormsSerializationRecordExtensions
         if (record is not ClassRecord types
             || types.GetRawValue("<JsonBytes>k__BackingField") is not SZArrayRecord<byte> byteData
             || !TypeName.TryParse(types.TypeName.FullName, out TypeName? result)
-            || result.GetGenericArguments().FirstOrDefault() is not { } genericTypeName
-            || Type.GetType(genericTypeName.AssemblyQualifiedName) is not Type genericType)
+            || result.GetGenericArguments().Single() is not { } genericTypeName)
         {
             // This is supposed to be JsonData, but somehow the binary formatted data is corrupt.
             throw new InvalidOperationException();
         }
 
-        // TODO: We should get the type from the Func<TypeName, Type> that will be passed down instead of using Type.GetType()
-        @object = JsonSerializer.Deserialize(byteData.GetArray(), genericType);
+        Type genericType = binder.ResolveType(genericTypeName) ?? throw new InvalidOperationException();
+        Type requestedType = typeof(T);
+        if (!genericType.IsAssignableTo(requestedType))
+        {
+            // valid record contains a wrong type.
+            return false;
+        }
+
+        @object = JsonSerializer.Deserialize(byteData.GetArray(), requestedType);
 
         return true;
     }
@@ -95,8 +101,7 @@ internal static class WinFormsSerializationRecordExtensions
 
     public static bool TryGetCommonObject(this SerializationRecord record, [NotNullWhen(true)] out object? value) =>
         record.TryGetResXObject(out value)
-        || record.TryGetDrawingPrimitivesObject(out value)
-        || record.TryGetObjectFromJson(out value);
+        || record.TryGetDrawingPrimitivesObject(out value);
 
     public static bool TypeNameMatches<T>(this SerializationRecord record)
     {
