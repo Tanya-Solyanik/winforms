@@ -154,7 +154,7 @@ public unsafe partial class DataObject
             }
 
             // Copied from https://github.com/dotnet/runtime/blob/79a71fc750652191eba18e19b3f98492e882cb5f/src/libraries/System.Formats.Nrbf/src/System/Formats/Nrbf/SerializationRecord.cs#L68
-            private static bool Matches(Type type, TypeName typeName)
+            internal static bool Matches(Type type, TypeName typeName)
             {
                 // We don't need to check for pointers and references to arrays,
                 // as it's impossible to serialize them with BF.

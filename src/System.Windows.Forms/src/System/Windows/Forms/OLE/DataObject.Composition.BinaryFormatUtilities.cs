@@ -94,11 +94,19 @@ public unsafe partial class DataObject
 
                 // For the new TryGet APIs, ensure that the stream contains the requested type,
                 // or type that can be assigned to the requested type.
-                if (!legacyMode
-                    && !record.TypeNameMatches<T>()
-                    && (resolver is null || !TypeNameIsAssignableToType(record.TypeName, typeof(T), resolver)))
+                if (!legacyMode && !record.TypeNameMatches<T>())
                 {
-                    return null;
+#if false // TODO: TanyaSo TryGetObjectAsJson should match types using DataObject.Composition.Binder.Matches(typeof(T), typeName)
+                    if (record.TryGetObjectFromJson<T>(out object? data))
+                    {
+                        return data;
+                    }
+#endif
+
+                    if (resolver is null || !TypeNameIsAssignableToType(record.TypeName, typeof(T), resolver)))
+                    {
+                        return null;
+                    }
                 }
 
                 if (record.TryGetCommonObject(out object? value))
@@ -116,6 +124,7 @@ public unsafe partial class DataObject
             }
 
             // TanyaSo: this does not special-case the NotSupported exception, but we probably want to always deserialize it.
+            // Otherwise the user has to do a second pass requesting specifically the NotSupportedException - TryGetData<NotSupportedException>().
             private static bool TypeNameIsAssignableToType(TypeName typeName, Type type, Func<TypeName, Type> resolver)
             {
                 Type? resolvedType = null;
