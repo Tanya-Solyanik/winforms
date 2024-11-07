@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Drawing;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -103,7 +102,6 @@ public unsafe partial class DataObject :
         error: false,
         DiagnosticId = Obsoletions.ClipboardGetDataDiagnosticId,
         UrlFormat = Obsoletions.SharedUrlFormat)]
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public virtual object? GetData(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetData(format, autoConvert);
 
@@ -112,7 +110,6 @@ public unsafe partial class DataObject :
         error: false,
         DiagnosticId = Obsoletions.ClipboardGetDataDiagnosticId,
         UrlFormat = Obsoletions.SharedUrlFormat)]
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public virtual object? GetData(string format) => GetData(format, autoConvert: true);
 
     [Obsolete(
@@ -120,7 +117,6 @@ public unsafe partial class DataObject :
         error: false,
         DiagnosticId = Obsoletions.ClipboardGetDataDiagnosticId,
         UrlFormat = Obsoletions.SharedUrlFormat)]
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
 
     public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(

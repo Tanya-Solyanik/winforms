@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Drawing;
 using System.Formats.Nrbf;
 using System.Reflection.Metadata;
@@ -236,7 +235,6 @@ public static class Clipboard
         error: false,
         DiagnosticId = Obsoletions.ClipboardGetDataDiagnosticId,
         UrlFormat = Obsoletions.SharedUrlFormat)]
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public static object? GetData(string format) =>
         string.IsNullOrWhiteSpace(format) ? null : GetData(format, autoConvert: false);
 
