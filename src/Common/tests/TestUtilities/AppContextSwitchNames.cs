@@ -23,5 +23,5 @@ public static class AppContextSwitchNames
     ///  The switch that controls whether or not the <see cref="BinaryFormatter"/> is enabled in the Clipboard.
     /// </summary>
     public const string ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName
-        = "ClipboardDragDrop.EnableUnsafeBinaryFormatterSerialization";
+        = "Windows.ClipboardDragDrop.EnableUnsafeBinaryFormatterSerialization";
 }
