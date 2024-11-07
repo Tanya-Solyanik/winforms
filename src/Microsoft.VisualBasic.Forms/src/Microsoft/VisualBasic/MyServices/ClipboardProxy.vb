@@ -100,7 +100,6 @@ Namespace Microsoft.VisualBasic.MyServices
             False,
             DiagnosticId:=Obsoletions.ClipboardGetDataDiagnosticId,
             UrlFormat:=Obsoletions.SharedUrlFormat)>
-        <EditorBrowsable(EditorBrowsableState.Never)>
         Public Function GetData(format As String) As Object
 #Disable Warning WFDEV005 ' Type or member is obsolete
             Return Clipboard.GetData(format)
