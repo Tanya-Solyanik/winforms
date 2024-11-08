@@ -329,7 +329,6 @@ public class DragDropTests : ControlTestBase
         });
 
         Assert.NotNull(data);
-        Assert.True(data is ListViewItem);
         Assert.Equal(listViewItem?.Name, data.Name);
         Assert.Equal(listViewItem?.Text, data.Text);
     }

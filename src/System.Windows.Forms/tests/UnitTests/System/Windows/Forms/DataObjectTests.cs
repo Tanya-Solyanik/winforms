@@ -1106,17 +1106,17 @@ public partial class DataObjectTests
         dataObject.GetData(format, autoConvert: false).Should().Be(input);
         dataObject.GetData(format, autoConvert: true).Should().Be(input);
 
-        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
 
-        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
-        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
 
-        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
-        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
 
         dataObject.ContainsAudio().Should().Be(format == DataFormats.WaveAudio);
@@ -1148,11 +1148,11 @@ public partial class DataObjectTests
         dataObject.GetData(format, autoConvert: false).Should().Be(input);
         dataObject.GetData(format, autoConvert: true).Should().Be(input);
 
-        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is string);
-        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is string);
-        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is string);
-        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is string);
-        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is not null);
+        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is not null);
+        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is not null);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is not null);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is not null);
 
         dataObject.TryGetData(format, resolver: null!, autoConvert: false, out string data).Should().Be(input is not null);
         data.Should().Be(input);
@@ -1265,17 +1265,17 @@ public partial class DataObjectTests
         dataObject.GetData(format, autoConvert: false).Should().Be(input);
         dataObject.GetData(format, autoConvert: true).Should().Be(input);
 
-        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, out object unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
 
-        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: false, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
-        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: true, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
 
-        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
-        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out unboundedData).Should().Be(input is not null);
         unboundedData.Should().Be(input);
 
         dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
@@ -1309,17 +1309,17 @@ public partial class DataObjectTests
         dataObject.GetData(format, autoConvert: false).Should().Be(input);
         dataObject.GetData(format, autoConvert: true).Should().Be(input);
 
-        dataObject.TryGetData(format, out string data).Should().Be(input is string);
+        dataObject.TryGetData(format, out string data).Should().Be(input is not null);
         data.Should().Be(input);
 
-        dataObject.TryGetData(format, autoConvert: false, out data).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: false, out data).Should().Be(input is not null);
         data.Should().Be(input);
-        dataObject.TryGetData(format, autoConvert: true, out data).Should().Be(input is string);
+        dataObject.TryGetData(format, autoConvert: true, out data).Should().Be(input is not null);
         data.Should().Be(input);
 
-        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out data).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: false, out data).Should().Be(input is not null);
         data.Should().Be(input);
-        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out data).Should().Be(input is string);
+        dataObject.TryGetData(format, resolver: null!, autoConvert: true, out data).Should().Be(input is not null);
         data.Should().Be(input);
 
         dataObject.GetDataPresent(format, autoConvert: true).Should().BeTrue();
