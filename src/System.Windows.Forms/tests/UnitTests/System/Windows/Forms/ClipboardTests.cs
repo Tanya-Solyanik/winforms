@@ -643,7 +643,7 @@ public class ClipboardTests
     }
 
     [WinFormsFact]
-    public void Clipboard_AppContextSwitch()
+    public void Clipboard_BinaryFormatter_AppContextSwitch()
     {
         LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
 
@@ -657,6 +657,24 @@ public class ClipboardTests
         using (BinaryFormatterInClipboardScope scope = new(enable: false))
         {
             LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
+        }
+    }
+
+        [WinFormsFact]
+    public void Clipboard_NrbfSerializer_AppContextSwitch()
+    {
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
+
+        using (NrbfSerializerInClipboardScope scope = new(enable: true))
+        {
+            LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
+        }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
+
+        using (NrbfSerializerInClipboardScope scope = new(enable: false))
+        {
+            LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
         }
     }
 
