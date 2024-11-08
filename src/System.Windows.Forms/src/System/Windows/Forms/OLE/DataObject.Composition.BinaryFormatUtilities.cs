@@ -119,13 +119,16 @@ public unsafe partial class DataObject
                     return value;
                 }
 
+                // The legacy APIs do not provide resolver, resolver is required for the NRBF deserializer to work beyond the known types.
+                if (!legacyMode
+                    && LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization
+                    && record.Deserialize(recordMap, (ITypeResolver)binder) is { } result)
+                {
+                    return result;
+                }
+
                 if (LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization)
                 {
-                    if (!legacyMode && record.Deserialize(recordMap, (ITypeResolver)binder) is { } result)
-                    {
-                       return result;
-                    }
-
                     stream.Position = startPosition;
                     return ReadObjectWithBinaryFormatter<T>(stream, binder);
                 }

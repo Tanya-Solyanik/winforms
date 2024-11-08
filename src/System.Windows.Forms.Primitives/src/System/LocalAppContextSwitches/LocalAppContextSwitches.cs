@@ -27,6 +27,7 @@ internal static partial class LocalAppContextSwitches
     internal const string EnableMsoComponentManagerSwitchName = "Switch.System.Windows.Forms.EnableMsoComponentManager";
     internal const string TreeNodeCollectionAddRangeRespectsSortOrderSwitchName = "System.Windows.Forms.TreeNodeCollectionAddRangeRespectsSortOrder";
     internal const string ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName = "Windows.ClipboardDragDrop.EnableUnsafeBinaryFormatterSerialization";
+    internal const string ClipboardDragDropEnableNrbfSerializationSwitchName = "Windows.ClipboardDragDrop.EnableNrbfSerialization";
 
     private static int s_scaleTopLevelFormMinMaxSizeForDpi;
     private static int s_anchorLayoutV2;
@@ -39,6 +40,7 @@ internal static partial class LocalAppContextSwitches
     private static int s_enableMsoComponentManager;
     private static int s_treeNodeCollectionAddRangeRespectsSortOrder;
     private static int s_clipboardDragDropEnableUnsafeBinaryFormatterSerialization;
+    private static int s_clipboardDragDropEnableNrbfSerialization;
 
     private static FrameworkName? s_targetFrameworkName;
 
@@ -229,8 +231,8 @@ internal static partial class LocalAppContextSwitches
     }
 
     /// <summary>
-    ///  If <see langword="true"/>, then Clipboard Get methods will use <see cref="BinaryFormatter"/>
-    ///  to deserialize the payload if needed.  To use this switch, application should also opt in into the
+    ///  If <see langword="true"/>, then Clipboard and DataObject Get and Set methods will use <see cref="BinaryFormatter"/>
+    ///  to serialize the payload if needed.  To use this switch, application should also opt in into the
     ///  System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization option and reference the out-of-band
     ///  System.Runtime.Serialization.Formatters NuGet package.
     /// </summary>
@@ -238,5 +240,15 @@ internal static partial class LocalAppContextSwitches
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => GetCachedSwitchValue(ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName, ref s_clipboardDragDropEnableUnsafeBinaryFormatterSerialization);
+    }
+
+    /// <summary>
+    ///  If <see langword="true"/>, then Clipboard Get methods will use System.Windows.Forms.BinaryFormat.Deserializer
+    ///  to deserialize the payload if needed.  This is an alternative to deserialization using use <see cref="BinaryFormatter"/>.
+    /// </summary>
+    public static bool ClipboardDragDropEnableNrbfSerialization
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => GetCachedSwitchValue(ClipboardDragDropEnableNrbfSerializationSwitchName, ref s_clipboardDragDropEnableNrbfSerialization);
     }
 }
