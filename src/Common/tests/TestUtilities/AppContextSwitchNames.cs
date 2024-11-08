@@ -14,8 +14,14 @@ public static class AppContextSwitchNames
         = "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization";
 
     /// <summary>
-    ///  Switch that controls <see cref="AppContext"/> switch caching.
+    ///  Switch that controls <see cref="AppContext"/> switch caching. This switch is set to
+    ///  <see langword="true" /> in our test assemblies.
     /// </summary>
     public const string LocalAppContext_DisableCaching
         = "TestSwitch.LocalAppContext.DisableCaching";
+    /// <summary>
+    ///  The switch that controls whether or not the <see cref="BinaryFormatter"/> is enabled in the Clipboard.
+    /// </summary>
+    public const string ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName
+        = "ClipboardDragDrop.EnableUnsafeBinaryFormatterSerialization";
 }
