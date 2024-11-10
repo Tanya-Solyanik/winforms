@@ -152,7 +152,7 @@ internal static unsafe class DragDropHelper
     private static unsafe bool GetBooleanFormat(IComDataObject dataObject, string format)
     {
         ArgumentNullException.ThrowIfNull(dataObject);
-        ArgumentException.ThrowIfNullOrEmpty(format);
+        ArgumentException.ThrowIfNullOrEmpty(format, nameof(format));
 
         ComTypes.STGMEDIUM medium = default;
 
@@ -261,7 +261,7 @@ internal static unsafe class DragDropHelper
     private static unsafe void SetBooleanFormat(IComDataObject dataObject, string format, bool value)
     {
         ArgumentNullException.ThrowIfNull(dataObject);
-        ArgumentException.ThrowIfNullOrEmpty(format);
+        ArgumentException.ThrowIfNullOrEmpty(format, nameof(format));
 
         ComTypes.FORMATETC formatEtc = new()
         {
