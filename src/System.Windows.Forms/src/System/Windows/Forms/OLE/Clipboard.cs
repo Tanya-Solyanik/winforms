@@ -221,8 +221,21 @@ public static class Clipboard
     /// <summary>
     ///  Retrieves an audio stream from the <see cref="Clipboard"/>.
     /// </summary>
-    public static Stream? GetAudioStream() =>
-        TryGetData(DataFormats.WaveAudioConstant, out Stream? stream) ? stream : null;
+    public static Stream? GetAudioStream()
+    {
+        IDataObject? data = GetDataObject();
+        if (data is ITypedDataObject typed)
+        {
+            return typed.TryGetData(DataFormats.WaveAudioConstant, out Stream? stream) ? stream : null;
+        }
+
+        if (data is IDataObject dataObject && dataObject.GetData(DataFormats.WaveAudioConstant) is Stream stream1)
+        {
+            return stream1;
+        }
+
+        return null;
+    }
 
     /// <summary>
     ///  Retrieves data from the <see cref="Clipboard"/> in the specified format.
@@ -252,7 +265,7 @@ public static class Clipboard
         [NotNullWhen(true), MaybeNullWhen(false)] out T data)
     {
         data = default;
-        if (GetDataObject() is IDataObject dataObject)
+        if (GetDataObject() is ITypedDataObject dataObject)
         {
             // Custom IDataObjects should handle their own validation.
             if (dataObject is DataObject && !DataObject.ValidateTryGetDataArguments<T>(format))
@@ -315,7 +328,7 @@ public static class Clipboard
         [NotNullWhen(true), MaybeNullWhen(false)] out T data)
     {
         data = default;
-        if (GetDataObject() is IDataObject dataObject)
+        if (GetDataObject() is ITypedDataObject dataObject)
         {
             return dataObject.TryGetData(format, resolver, autoConvert: false, out data);
         }
@@ -330,12 +343,20 @@ public static class Clipboard
     {
         StringCollection result = [];
 
-        if (GetDataObject() is IDataObject dataObject
-            && dataObject.TryGetData(
+        IDataObject? data = GetDataObject();
+        if (data is ITypedDataObject typed)
+        {
+            if (typed.TryGetData(
                 DataFormats.FileDropConstant,
                 DataObject.NotSupportedResolver,
                 autoConvert: true,
                 out string[]? strings))
+            {
+                result.AddRange(strings);
+            }
+        }
+        else if (data is IDataObject dataObject
+            && dataObject.GetData(DataFormats.FileDropConstant, autoConvert: true) is string[] strings)
         {
             result.AddRange(strings);
         }
@@ -352,14 +373,16 @@ public static class Clipboard
     /// </devdoc>
     public static Image? GetImage()
     {
-        if (GetDataObject() is IDataObject dataObject
-            && dataObject.TryGetData(
-                DataFormats.Bitmap,
-                DataObject.NotSupportedResolver,
-                autoConvert: true,
-                out Bitmap? image))
+        IDataObject? data = GetDataObject();
+        if (data is ITypedDataObject typed)
         {
+            typed.TryGetData(DataFormats.Bitmap, DataObject.NotSupportedResolver, autoConvert: true, out Image? image);
             return image;
+        }
+
+        if (data is IDataObject dataObject && dataObject.GetData(DataFormats.Bitmap, autoConvert: true) is Image image1)
+        {
+            return image1;
         }
 
         return null;
@@ -377,7 +400,19 @@ public static class Clipboard
     public static string GetText(TextDataFormat format)
     {
         SourceGenerated.EnumValidator.Validate(format, nameof(format));
-        return TryGetData(ConvertToDataFormats(format), out string? text) ? text : string.Empty;
+
+        IDataObject? data = GetDataObject();
+        if (data is ITypedDataObject typed)
+        {
+            return typed.TryGetData(ConvertToDataFormats(format), out string? text) ? text : string.Empty;
+        }
+
+        if (data is IDataObject dataObject)
+        {
+            return dataObject.GetData(ConvertToDataFormats(format), autoConvert: true) is string text ? text : string.Empty;
+        }
+
+        return string.Empty;
     }
 
     /// <summary>
