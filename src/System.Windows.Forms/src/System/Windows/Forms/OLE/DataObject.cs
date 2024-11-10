@@ -17,6 +17,7 @@ namespace System.Windows.Forms;
 [ClassInterface(ClassInterfaceType.None)]
 public unsafe partial class DataObject :
     IDataObject,
+    ITypedDataObject,
     Com.IDataObject.Interface,
     ComTypes.IDataObject,
     Com.IManagedWrapper<Com.IDataObject>
@@ -119,30 +120,6 @@ public unsafe partial class DataObject :
         UrlFormat = Obsoletions.SharedUrlFormat)]
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
 
-    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-        string format,
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
-        Func<TypeName, Type> resolver,
-#pragma warning restore CS3001
-        bool autoConvert,
-        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-            ((IDataObject)_innerData).TryGetData(format, resolver, autoConvert, out data);
-
-    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-        string format,
-        bool autoConvert,
-        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-            TryGetData(format, NotSupportedResolver, autoConvert, out data);
-
-    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-        string format,
-        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-        TryGetData(format, autoConvert: false, out data);
-
-    public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-            TryGetData(typeof(T).FullName!, out data);
-
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetDataPresent(format, autoConvert);
 
@@ -162,6 +139,33 @@ public unsafe partial class DataObject :
     public virtual void SetData(Type format, object? data) => ((IDataObject)_innerData).SetData(format, data);
 
     public virtual void SetData(object? data) => ((IDataObject)_innerData).SetData(data);
+    #endregion
+
+    #region ITypedDataObject
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+#pragma warning disable CS3001 // Argument type is not CLS-compliant
+        Func<TypeName, Type> resolver,
+#pragma warning restore CS3001
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+        // TODO (TanyaSo) argument validation here??
+            TryGetDataCore(format, resolver, autoConvert, out data);
+
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetData(format, NotSupportedResolver, autoConvert, out data);
+
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+        TryGetData(format, autoConvert: false, out data);
+
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetData(typeof(T).FullName!, out data);
     #endregion
 
     public virtual bool ContainsAudio() => GetDataPresent(DataFormats.WaveAudioConstant, autoConvert: false);
@@ -230,6 +234,15 @@ public unsafe partial class DataObject :
 
         SetData(ConvertToDataFormats(format), false, textData);
     }
+
+    protected virtual bool TryGetDataCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+#pragma warning disable CS3001 // Argument type is not CLS-compliant
+        Func<TypeName, Type> resolver,
+#pragma warning restore CS3001
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            ((ITypedDataObject)_innerData).TryGetData(format, resolver, autoConvert, out data);
 
     internal static bool ValidateTryGetDataArguments<T>(string format, Func<TypeName, Type> resolver)
     {

@@ -17,7 +17,7 @@ public unsafe partial class DataObject
         /// <summary>
         ///  Maps native pointer <see cref="Com.IDataObject"/> to <see cref="IDataObject"/>.
         /// </summary>
-        private unsafe class NativeToWinFormsAdapter : IDataObject, Com.IDataObject.Interface
+        private unsafe class NativeToWinFormsAdapter : IDataObject, ITypedDataObject, Com.IDataObject.Interface
         {
             private readonly AgileComPointer<Com.IDataObject> _nativeDataObject;
 
@@ -494,7 +494,9 @@ public unsafe partial class DataObject
 
             object? IDataObject.GetData(Type format) => ((IDataObject)this).GetData(format.FullName!);
 
-            bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool IDataObject.GetDataPresent(Type format) => GetDataPresent(format.FullName!);
+
+                        bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
                 string format,
                 Func<TypeName, Type> resolver,
                 bool autoConvert,
@@ -509,22 +511,20 @@ public unsafe partial class DataObject
                 return TryGetDataInternal(format, resolver, autoConvert, legacyMode: false, out data);
             }
 
-            bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
                 string format,
                 bool autoConvert,
                 [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
                 TryGetDataInternal(format, NotSupportedResolver, autoConvert, legacyMode: false, out data);
 
-            bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
                 string format,
                 [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
                 TryGetDataInternal(format, NotSupportedResolver, autoConvert: false, legacyMode: false, out data);
 
-            bool IDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
                 [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
                 TryGetDataInternal(typeof(T).FullName!, NotSupportedResolver, autoConvert: false, legacyMode: false, out data);
-
-            bool IDataObject.GetDataPresent(Type format) => GetDataPresent(format.FullName!);
 
             public bool GetDataPresent(string format, bool autoConvert)
             {
