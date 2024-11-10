@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection.Metadata;
-
 namespace System.Windows.Forms.Tests;
 
 // NB: doesn't require thread affinity
@@ -103,10 +101,6 @@ public class DragEventArgsTests
         public object GetData(string format, bool autoConvert) => throw new NotImplementedException();
         public object GetData(string format) => throw new NotImplementedException();
         public object GetData(Type format) => throw new NotImplementedException();
-        public bool TryGetData<T>(string format, Func<TypeName, Type> resolver, bool autoConvert, out T data) => throw new NotImplementedException();
-        public bool TryGetData<T>(string format, bool autoConvert, out T data) => throw new NotImplementedException();
-        public bool TryGetData<T>(string format, out T data) => throw new NotImplementedException();
-        public bool TryGetData<T>(out T data) => throw new NotImplementedException();
         public void SetData(string format, bool autoConvert, object data) => throw new NotImplementedException();
         public void SetData(string format, object data) => throw new NotImplementedException();
         public void SetData(Type format, object data) => throw new NotImplementedException();

@@ -3,6 +3,7 @@
 
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -19,7 +20,7 @@ namespace System.Windows.Forms.Tests;
 // NB: doesn't require thread affinity
 public partial class DataObjectTests
 {
-    #pragma warning disable WFDEV005  // Type or member is obsolete
+#pragma warning disable WFDEV005  // Type or member is obsolete
     private static readonly string[] s_restrictedClipboardFormats =
     [
         DataFormats.CommaSeparatedValue,
@@ -384,37 +385,91 @@ public partial class DataObjectTests
         mockDataObject.Verify(o => o.TryGetData(formatName, out data), Times.Exactly(1));
     }
 
-    [Fact]
-    public void DataObject_TryGetData_InvokeStringString_CallsTryGetData()
+    internal class DataObjectOverridesGetDataCore : DataObject
     {
-        string data = "text";
-        Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
-        mockDataObject
-            .Setup(o => o.TryGetData("test format", out data))
-            .CallBase();
-        mockDataObject
-            .Setup(o => o.TryGetData("test format", false, out data))
-            .Returns(true)
-            .Verifiable();
-        mockDataObject.Object.TryGetData("test format", out data).Should().BeTrue();
-        mockDataObject.Verify(o => o.TryGetData("test format", false, out data), Times.Exactly(1));
+        private readonly string _format;
+        private readonly Func<TypeName, Type> _resolver;
+        private readonly bool _autoConvert;
+
+        public DataObjectOverridesGetDataCore(string format, Func<TypeName, Type> resolver, bool autoConvert) : base()
+        {
+            _format = format;
+            _resolver = resolver;
+            _autoConvert = autoConvert;
+        }
+
+        public int Count { get; private set; }
+
+        protected override bool TryGetDataCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            Func<TypeName, Type> resolver,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
+        {
+            format.Should().Be(_format);
+            resolver.Should().BeSameAs(_resolver);
+            autoConvert.Should().Be(_autoConvert);
+            typeof(T).Should().Be(typeof(string));
+
+            Count++;
+            data = default;
+            return false;
+        }
+    }
+
+    public static TheoryData<string> RestrictedAndUnrestrictedFormats =>
+    [
+        DataFormats.Bitmap,
+        DataFormats.CommaSeparatedValue,
+        "something custom"
+    ];
+
+    [Theory]
+    [MemberData(nameof(RestrictedAndUnrestrictedFormats))]
+    public void DataObject_TryGetData_InvokeStringString_CallsTryGetDataCore(string format)
+    {
+        DataObjectOverridesGetDataCore dataObject = new(format, DataObject.NotSupportedResolver, autoConvert: false);
+        dataObject.Count.Should().Be(0);
+
+        dataObject.TryGetData(format, out string data).Should().BeFalse();
+        data.Should().BeNull();
+        dataObject.Count.Should().Be(1);
+    }
+
+    public static TheoryData<string, bool> FormatAndAutoConvert => new()
+    {
+        { DataFormats.Bitmap, true },
+        { DataFormats.CommaSeparatedValue, true },
+        { "something custom", true },
+        { DataFormats.Bitmap, false },
+        { DataFormats.CommaSeparatedValue, false },
+        { "something custom", false }
+    };
+
+    [Theory]
+    [MemberData(nameof(FormatAndAutoConvert))]
+    public void DataObject_TryGetData_InvokeStringBoolString_CallsTryGetDataCore(string format, bool autoConvert)
+    {
+        DataObjectOverridesGetDataCore dataObject = new(format, DataObject.NotSupportedResolver, autoConvert);
+        dataObject.Count.Should().Be(0);
+
+        dataObject.TryGetData(format, autoConvert, out string data).Should().BeFalse();
+        data.Should().BeNull();
+        dataObject.Count.Should().Be(1);
     }
 
     [Theory]
     [BoolData]
-    public void DataObject_TryGetData_InvokeStringBoolString_CallsTryGetData(bool autoConvert)
+    public void DataObject_TryGetData_InvokeStringResolverBoolString_CallsTryGetDataCore(string format, bool autoConvert)
     {
-        string data = "text";
-        Mock<DataObject> mockDataObject = new(MockBehavior.Strict);
-        mockDataObject
-            .Setup(o => o.TryGetData("test format", autoConvert, out data))
-            .CallBase();
-        mockDataObject
-            .Setup(o => o.TryGetData("test format", DataObject.NotSupportedResolver, autoConvert, out data))
-            .Returns(true)
-            .Verifiable();
-        mockDataObject.Object.TryGetData("test format", autoConvert, out data).Should().BeTrue();
-        mockDataObject.Verify(o => o.TryGetData("test format", DataObject.NotSupportedResolver, autoConvert, out data), Times.Exactly(1));
+        DataObjectOverridesGetDataCore dataObject = new(format, Resolver, autoConvert);
+        dataObject.Count.Should().Be(0);
+
+        dataObject.TryGetData(format, Resolver, autoConvert, out string data).Should().BeFalse();
+        data.Should().BeNull();
+        dataObject.Count.Should().Be(1);
+
+        static Type Resolver(TypeName typeName) => typeof(string);
     }
 
     [Theory]

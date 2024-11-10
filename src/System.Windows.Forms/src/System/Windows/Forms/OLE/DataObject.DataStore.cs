@@ -10,7 +10,7 @@ namespace System.Windows.Forms;
 
 public partial class DataObject
 {
-    private class DataStore : IDataObject
+    private class DataStore : IDataObject, ITypedDataObject
     {
         private class DataStoreEntry
         {
@@ -80,31 +80,6 @@ public partial class DataObject
         public virtual object? GetData(string format) => GetData(format, autoConvert: true);
 
         public virtual object? GetData(Type format) => GetData(format.FullName!);
-
-        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-            string format,
-            Func<TypeName, Type> resolver,
-            bool autoConvert,
-            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
-        {
-            data = default;
-            return TryGetDataInternal(format, autoConvert, out data);
-        }
-
-        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-            string format,
-            bool autoConvert,
-            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-            TryGetDataInternal(format, autoConvert, out data);
-
-        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-            string format,
-            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-            TryGetDataInternal(format, autoConvert: false, out data);
-
-        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-            TryGetDataInternal(typeof(T).FullName!, autoConvert: false, out data);
 
         public virtual void SetData(string format, bool autoConvert, object? data)
         {
@@ -229,5 +204,27 @@ public partial class DataObject
         }
 
         public virtual string[] GetFormats() => GetFormats(autoConvert: true);
+
+        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            Func<TypeName, Type> resolver,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetDataInternal(format, autoConvert, out data);
+
+        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetDataInternal(format, autoConvert, out data);
+
+        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetDataInternal(format, autoConvert: false, out data);
+
+        public virtual bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetDataInternal(typeof(T).FullName!, autoConvert: false, out data);
     }
 }

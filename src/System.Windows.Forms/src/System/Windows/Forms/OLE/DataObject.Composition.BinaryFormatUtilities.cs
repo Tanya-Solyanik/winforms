@@ -163,10 +163,7 @@ public unsafe partial class DataObject
                     throw new NotSupportedException(SR.BinaryFormatterNotSupported);
                 }
 
-                stream.Position = startPosition;
-
-#pragma warning disable SYSLIB0011 // Type or member is obsolete
-#pragma warning disable SYSLIB0050 // Type or member is obsolete
+#pragma warning disable SYSLIB0011, SYSLIB0050 // Type or member is obsolete
 #pragma warning disable CA2300 // Do not use insecure deserializer BinaryFormatter
 #pragma warning disable CA2302 // Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize
                 // cs/dangerous-binary-deserialization
@@ -177,8 +174,7 @@ public unsafe partial class DataObject
                 }.Deserialize(stream); // CodeQL[SM03722] : BinaryFormatter is intended to be used as a fallback for unsupported types. Users must explicitly opt into this behavior.
 #pragma warning restore CA2300
 #pragma warning restore CA2302
-#pragma warning restore SYSLIB0050
-#pragma warning restore SYSLIB0011
+#pragma warning restore SYSLIB0050, SYSLIB0011
             }
         }
     }
