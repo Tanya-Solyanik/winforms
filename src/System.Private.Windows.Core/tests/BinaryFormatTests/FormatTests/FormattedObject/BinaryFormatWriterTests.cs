@@ -162,8 +162,8 @@ public class BinaryFormatWriterTests
         stream.Position.Should().Be(0);
     }
 
-    public static IEnumerable<object[]?> TryWriteFrameworkObject_SupportedObjects_TestData =>
-        ((IEnumerable<object[]?>)HashtableTests.Hashtables_TestData).Concat(
+    public static IEnumerable<object[]> TryWriteFrameworkObject_SupportedObjects_TestData =>
+        ((IEnumerable<object[]>)HashtableTests.Hashtables_TestData).Concat(
             ListTests.PrimitiveLists_TestData).Concat(
             ListTests.ArrayLists_TestData).Concat(
             PrimitiveTypeTests.Primitive_Data).Concat(
@@ -206,7 +206,7 @@ public class BinaryFormatWriterTests
         SystemColors.ButtonFace
     };
 
-    public static TheoryData<string?[]> StringArray_Parse_Data => new()
+    public static TheoryData<Array> StringArray_Parse_Data => new()
     {
         new string?[] { "one", "two" },
         new string?[] { "yes", "no", null },
