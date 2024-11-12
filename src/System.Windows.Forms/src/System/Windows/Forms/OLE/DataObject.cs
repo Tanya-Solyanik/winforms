@@ -144,9 +144,7 @@ public unsafe partial class DataObject :
     #region ITypedDataObject
     public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
         string format,
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
         Func<TypeName, Type> resolver,
-#pragma warning restore CS3001
         bool autoConvert,
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
         // TODO (TanyaSo) argument validation here??
@@ -237,9 +235,7 @@ public unsafe partial class DataObject :
 
     protected virtual bool TryGetDataCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
         string format,
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
         Func<TypeName, Type> resolver,
-#pragma warning restore CS3001
         bool autoConvert,
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             ((ITypedDataObject)_innerData).TryGetData(format, resolver, autoConvert, out data);

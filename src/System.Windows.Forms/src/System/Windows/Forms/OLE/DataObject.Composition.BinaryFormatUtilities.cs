@@ -119,9 +119,10 @@ public unsafe partial class DataObject
                     return value;
                 }
 
-                // The legacy APIs do not provide resolver, resolver is required for the NRBF deserializer to work beyond the known types.
-                if (!legacyMode
-                    && LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization
+                // The legacy APIs do not provide resolver, even the default on because T is typeof(object). Resolver is required for the
+                // NRBF deserializer to work beyond the known types, so we are catching all exceptions here in order to fall back to the
+                // BinaryFormatter.
+                if (LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization
                     && record.Deserialize(recordMap, (ITypeResolver)binder) is { } result)
                 {
                     return result;
@@ -136,7 +137,7 @@ public unsafe partial class DataObject
                 return null;
             }
 
-            // TanyaSo: this does not special-case the NotSupported exception, but we probably want to always deserialize it.
+            // TODO (TanyaSo): this does not special-case the NotSupported exception, but we probably want to always deserialize it.
             private static bool TypeNameIsAssignableToType(TypeName typeName, Type type, Func<TypeName, Type> resolver)
             {
                 Type? resolvedType = null;

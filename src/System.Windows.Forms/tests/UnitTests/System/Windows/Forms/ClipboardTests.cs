@@ -660,7 +660,7 @@ public class ClipboardTests
         }
     }
 
-        [WinFormsFact]
+    [WinFormsFact]
     public void Clipboard_NrbfSerializer_AppContextSwitch()
     {
         LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
@@ -696,13 +696,19 @@ public class ClipboardTests
     {
         DateTime date = DateTime.Now;
         TestData expected = new(date);
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
-        Clipboard.SetData("TestData", expected);
+        using (BinaryFormatterScope scope = new(enable: true))
+        using (BinaryFormatterInClipboardScope clipboardScope = new(enable: true))
+        {
+            Clipboard.SetData("TestData", expected);
 
-        Clipboard.TryGetData("TestData", out TestData? data).Should().BeTrue();
-        var result = data.Should().BeOfType<TestData>().Subject;
-        expected.Equals(result);
+            Clipboard.TryGetData("TestData", out TestData? data).Should().BeTrue();
+            var result = data.Should().BeOfType<TestData>().Subject;
+            expected.Equals(result);
+        }
+
+        using NrbfSerializerInClipboardScope nrbfScope = new(enable: true);
+        Clipboard.TryGetData("TestData", out TestData? testData).Should().BeTrue();
+        expected.Equals(testData.Should().BeOfType<TestData>().Subject);
     }
 
     [Serializable]
@@ -732,6 +738,9 @@ public class ClipboardTests
         Clipboard.SetData("TestData", expected);
 
         ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+
+        using NrbfSerializerInClipboardScope nrbfScope = new(enable: true);
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
     }
 
     [WinFormsFact]
@@ -741,6 +750,9 @@ public class ClipboardTests
         using BinaryFormatterScope scope = new(enable: true);
         Clipboard.SetData("TestData", expected);
 
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+
+        using NrbfSerializerInClipboardScope nrbfScope = new(enable: true);
         ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
     }
 }

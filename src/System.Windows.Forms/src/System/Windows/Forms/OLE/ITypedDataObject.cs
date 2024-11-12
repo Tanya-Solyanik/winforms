@@ -8,7 +8,7 @@ namespace System.Windows.Forms;
 public interface ITypedDataObject
 {
     /// <summary>
-    ///  Retrieves the data associated with data format named after <typeparamref name="T"/>,
+    ///  Retrieves data associated with data format named after <typeparamref name="T"/>,
     ///  if that data is of type <typeparamref name="T"/>.
     /// </summary>
     /// <returns>
@@ -20,7 +20,7 @@ public interface ITypedDataObject
         [NotNullWhen(true), MaybeNullWhen(false)] out T data);
 
     /// <summary>
-    ///  Retrieves the data associated with the specified data format if that data is of type <typeparamref name="T"/>.
+    ///  Retrieves data associated with the specified data format if that data is of type <typeparamref name="T"/>.
     /// </summary>
     /// <returns>
     ///  <see langword="true"/> if the data of this format is present and the value is
@@ -32,7 +32,7 @@ public interface ITypedDataObject
         [NotNullWhen(true), MaybeNullWhen(false)] out T data);
 
     /// <summary>
-    ///  Retrieves the data associated with the specified data format, using
+    ///  Retrieves data associated with the specified data format, using
     ///  <paramref name="autoConvert"/> to determine whether to convert the data to another format,
     ///  if that data is of type <typeparamref name="T"/>.
     /// </summary>
@@ -47,7 +47,7 @@ public interface ITypedDataObject
         [NotNullWhen(true), MaybeNullWhen(false)] out T data);
 
     /// <summary>
-    ///  Retrieves the data associated with the specified data format, using
+    ///  Retrieves data associated with the specified data format, using
     ///  <paramref name="autoConvert"/> to determine whether to convert the data to the  format,
     ///  if that data is assignable to <typeparamref name="T"/>.
     ///  Will use <paramref name="resolver"/> with the binary formatter if needed.
@@ -61,9 +61,7 @@ public interface ITypedDataObject
     /// </returns>
     bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
         string format,
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
         Func<TypeName, Type> resolver,
-#pragma warning restore CS3001
         bool autoConvert,
         [NotNullWhen(true), MaybeNullWhen(false)] out T data);
 }

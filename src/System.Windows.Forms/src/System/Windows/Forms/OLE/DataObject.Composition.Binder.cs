@@ -139,6 +139,7 @@ public unsafe partial class DataObject
 
                 if (_legacyMode)
                 {
+                    // TODO(TanyaSo) this is a wrong message
                     return Switches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization
                         ? null
                         : throw new NotSupportedException($"Using BinaryFormatter is not supported in WinForms Clipboard" +

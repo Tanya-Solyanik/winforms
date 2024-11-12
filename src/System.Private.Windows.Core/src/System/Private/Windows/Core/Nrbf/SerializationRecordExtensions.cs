@@ -51,6 +51,7 @@ internal static class SerializationRecordExtensions
         catch (Exception ex) when (ex is ArgumentException or InvalidCastException or ArithmeticException or IOException)
         {
             // Make the exception easier to catch, but retain the original stack trace.
+            // TODO(TanyaSo) is this really converted to NotSupported up the stack??
             throw ex.ConvertToSerializationException();
         }
         catch (TargetInvocationException ex)
@@ -63,7 +64,7 @@ internal static class SerializationRecordExtensions
     ///  Deserializes the <see cref="SerializationRecord"/> to an object.
     /// </summary>
     [RequiresUnreferencedCode("Ultimately calls resolver for type names in the data.")]
-    public static object Deserialize(
+    public static object? Deserialize(
         this SerializationRecord rootRecord,
         IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap,
         ITypeResolver typeResolver)
@@ -77,15 +78,12 @@ internal static class SerializationRecordExtensions
         {
             return Deserializer.Deserialize(rootRecord.Id, recordMap, options);
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidCastException or ArithmeticException or IOException)
+        catch (Exception ex) when (ex is ArgumentException or InvalidCastException or ArithmeticException or IOException or TargetInvocationException or SerializationException)
         {
-            // Make the exception easier to catch, but retain the original stack trace.
-            throw ex.ConvertToSerializationException();
+            Debug.WriteLine(ex.ToString());
         }
-        catch (TargetInvocationException ex)
-        {
-            throw ExceptionDispatchInfo.Capture(ex.InnerException!).SourceException.ConvertToSerializationException();
-        }
+
+        return null;
     }
 
     internal delegate bool TryGetDelegate(SerializationRecord record, [NotNullWhen(true)] out object? value);

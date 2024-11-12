@@ -154,7 +154,7 @@ public static partial class DataFormats
     /// </summary>
     public static Format GetFormat(string format)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(format, nameof(format));
+        ArgumentException.ThrowIfNullOrWhiteSpace(format);
 
         lock (s_internalSyncObject)
         {

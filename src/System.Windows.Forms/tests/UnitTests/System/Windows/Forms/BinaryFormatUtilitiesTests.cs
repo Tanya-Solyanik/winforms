@@ -342,6 +342,9 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
 
         // Doesn't attempt to access BinaryFormatter.
         ReadObjectFromStream().Should().BeNull();
+
+        using NrbfSerializerInClipboardScope nrbfScope = new(enable: true);
+        ReadObjectFromStream().Should().BeNull();
     }
 
     [Theory]
@@ -392,12 +395,20 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
         {
             WriteObjectToStream(value);
 
+            ReadAndValidate();
+        }
+
+        ReadObjectFromStream<List<object>>(ObjectResolver).Should().BeNull();
+
+        using NrbfSerializerInClipboardScope nrbfScope = new(enable: true);
+        ReadAndValidate();
+
+        void ReadAndValidate()
+        {
             var result = ReadObjectFromStream<List<object>>(ObjectResolver).Should().BeOfType<List<object>>().Subject;
             result.Count.Should().Be(1);
             result[0].Should().Be("text");
         }
-
-        ReadObjectFromStream<List<object>>(ObjectResolver).Should().BeNull();
     }
 
     private static Type ObjectResolver(TypeName typeName)
