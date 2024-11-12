@@ -12,7 +12,7 @@ namespace System.Windows.Forms.Tests;
 public class DataObjectExtensionsTests
 {
     [Fact]
-    public void TryGetData_Throws_ArgumentNull()
+    public void TryGetData_Throws_ArgumentNullException()
     {
         ((Action)(() => DataObjectExtensions.TryGetData<string>(null!, out _))).Should().Throw<ArgumentNullException>();
         ((Action)(() => DataObjectExtensions.TryGetData<string>(null!, DataFormats.Text, out _))).Should().Throw<ArgumentNullException>();
@@ -25,37 +25,37 @@ public class DataObjectExtensionsTests
     private static Type Resolver(TypeName typeName) => typeof(string);
 
     [Fact]
-    public void TryGetData_Throws_Argument()
+    public void TryGetData_Throws_NotSupportedException()
     {
         UntypedDataObject dataObject = new();
 
-        ((Action)(() => dataObject.TryGetData<string>(out _))).Should().Throw<ArgumentException>();
+        ((Action)(() => dataObject.TryGetData<string>(out _))).Should().Throw<NotSupportedException>();
         dataObject.VerifyGetDataWasNotCalled();
     }
 
     [Fact]
-    public void TryGetData_String_Throws_Argument()
+    public void TryGetData_String_Throws_NotSupportedException()
     {
         UntypedDataObject dataObject = new();
-        ((Action)(() => dataObject.TryGetData<string>(DataFormats.Text, out _))).Should().Throw<ArgumentException>();
+        ((Action)(() => dataObject.TryGetData<string>(DataFormats.Text, out _))).Should().Throw<NotSupportedException>();
         dataObject.VerifyGetDataWasNotCalled();
     }
 
     [Theory]
     [BoolData]
-    public void TryGetData_StringBool_Throws_Argument(bool autoConvert)
+    public void TryGetData_StringBool_Throws_NotSupportedException(bool autoConvert)
     {
         UntypedDataObject dataObject = new();
-        ((Action)(() => dataObject.TryGetData<string>(DataFormats.CommaSeparatedValue, autoConvert, out _))).Should().Throw<ArgumentException>();
+        ((Action)(() => dataObject.TryGetData<string>(DataFormats.CommaSeparatedValue, autoConvert, out _))).Should().Throw<NotSupportedException>();
         dataObject.VerifyGetDataWasNotCalled();
     }
 
     [Theory]
     [BoolData]
-    public void TryGetData_StringFuncBool_Throws_Argument(bool autoConvert)
+    public void TryGetData_StringFuncBool_Throws_NotSupportedException(bool autoConvert)
     {
         UntypedDataObject dataObject = new();
-        ((Action)(() => dataObject.TryGetData<string>(DataFormats.UnicodeText, Resolver, autoConvert, out _))).Should().Throw<ArgumentException>();
+        ((Action)(() => dataObject.TryGetData<string>(DataFormats.UnicodeText, Resolver, autoConvert, out _))).Should().Throw<NotSupportedException>();
         dataObject.VerifyGetDataWasNotCalled();
     }
 
@@ -220,28 +220,28 @@ public class DataObjectExtensionsTests
             _tryGetDataStringFuncBoolCalledCount.Should().Be(1);
         }
 
-        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>([MaybeNullWhen(false), NotNullWhen(true)] out T data)
+        public bool TryGetData<T>([MaybeNullWhen(false), NotNullWhen(true)] out T data)
         {
             _tryGetDataCalledCount++;
             data = default;
             return false;
         }
 
-        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, [MaybeNullWhen(false), NotNullWhen(true)] out T data)
+        public bool TryGetData<T>(string format, [MaybeNullWhen(false), NotNullWhen(true)] out T data)
         {
             _tryGetDataStringCalledCount++;
             data = default;
             return false;
         }
 
-        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert, [MaybeNullWhen(false), NotNullWhen(true)] out T data)
+        public bool TryGetData<T>(string format, bool autoConvert, [MaybeNullWhen(false), NotNullWhen(true)] out T data)
         {
             _tryGetDataStringBoolCalledCount++;
             data = default;
             return false;
         }
 
-        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, Func<TypeName, Type> resolver, bool autoConvert, [MaybeNullWhen(false), NotNullWhen(true)] out T data)
+        public bool TryGetData<T>(string format, Func<TypeName, Type> resolver, bool autoConvert, [MaybeNullWhen(false), NotNullWhen(true)] out T data)
         {
             _tryGetDataStringFuncBoolCalledCount++;
             data = default;

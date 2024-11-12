@@ -101,7 +101,7 @@ public unsafe partial class DataObject
 #if false // TODO(TanyaSo) - modify TryGetObjectFromJson to take a resolver and rename to HasJsonData???
                     // Return true if the payload contains valid JsonData struct, type matches or not
                     // note: binder.GetType() throws and never returns null
-                    // run isassignable in the json method
+                    // run IsAssignable in the json method
                     if (record.TryGetObjectFromJson(binder.GetType, out object? data))
                     {
                         return data;
@@ -119,15 +119,17 @@ public unsafe partial class DataObject
                     return value;
                 }
 
-                // The legacy APIs do not provide resolver, resolver is required for the NRBF deserializer to work beyond the known types.
-                if (!legacyMode
-                    && LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization
+                // The legacy APIs do not provide resolver, even the default on because T is object. Resolver is required for the
+                // NRBF deserializer to work beyond the known types, so we are catching all exceptions here in order to fall back to the
+                // BinaryFormatter. NRBF deserializer is different from the BinaryFormatter in:
+                // 1. Doesn't allow arrays that have a non-zero base index (can't create these in C# or VB)
+                // 2. Only allows IObjectReference types that contain primitives (to avoid observable cycle dependencies to indeterminate state)
+                if (LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization
                     && record.Deserialize(recordMap, (ITypeResolver)binder) is { } result)
                 {
                     return result;
                 }
-
-                if (LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization)
+                else if (LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization)
                 {
                     stream.Position = startPosition;
                     return ReadObjectWithBinaryFormatter<T>(stream, binder);
@@ -136,20 +138,20 @@ public unsafe partial class DataObject
                 return null;
             }
 
-            // TanyaSo: this does not special-case the NotSupported exception, but we probably want to always deserialize it.
+            // TODO (TanyaSo): this does not special-case the NotSupported exception, but we probably want to always deserialize it.
             private static bool TypeNameIsAssignableToType(TypeName typeName, Type type, Func<TypeName, Type> resolver)
             {
                 Type? resolvedType = null;
                 try
                 {
                     resolvedType = resolver(typeName);
+                    return resolvedType?.IsAssignableTo(type) == true;
                 }
                 catch (Exception ex) when (!ex.IsCriticalException())
                 {
-                    return false;
                 }
 
-                return resolvedType?.IsAssignableTo(type) == true;
+                return false;
             }
 
             private static object? ReadObjectWithBinaryFormatter<T>(MemoryStream stream, SerializationBinder binder)

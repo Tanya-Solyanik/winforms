@@ -645,36 +645,38 @@ public class ClipboardTests
     [WinFormsFact]
     public void Clipboard_BinaryFormatter_AppContextSwitch()
     {
+        // Test the switch to ensure it works as expected in the context of this test assembly.
         LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
 
-        using (BinaryFormatterInClipboardScope scope = new(enable: true))
+        using (BinaryFormatterInClipboardDragDropScope scope = new(enable: true))
         {
             LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeTrue();
         }
 
         LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
 
-        using (BinaryFormatterInClipboardScope scope = new(enable: false))
+        using (BinaryFormatterInClipboardDragDropScope scope = new(enable: false))
         {
             LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
         }
     }
 
-        [WinFormsFact]
+    [WinFormsFact]
     public void Clipboard_NrbfSerializer_AppContextSwitch()
     {
-        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
+        // Test the switch to ensure it works as expected in the context of this test assembly.
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
 
-        using (NrbfSerializerInClipboardScope scope = new(enable: true))
-        {
-            LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
-        }
-
-        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
-
-        using (NrbfSerializerInClipboardScope scope = new(enable: false))
+        using (NrbfSerializerInClipboardDragDropScope scope = new(enable: false))
         {
             LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
+        }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
+
+        using (NrbfSerializerInClipboardDragDropScope scope = new(enable: true))
+        {
+            LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
         }
     }
 
@@ -696,13 +698,20 @@ public class ClipboardTests
     {
         DateTime date = DateTime.Now;
         TestData expected = new(date);
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
-        Clipboard.SetData("TestData", expected);
+        using (BinaryFormatterScope scope = new(enable: true))
+        using (NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: false))
+        using (BinaryFormatterInClipboardDragDropScope clipboardDragDropScope = new(enable: true))
+        {
+            Clipboard.SetData("TestData", expected);
 
-        Clipboard.TryGetData("TestData", out TestData? data).Should().BeTrue();
-        var result = data.Should().BeOfType<TestData>().Subject;
-        expected.Equals(result);
+            Clipboard.TryGetData("TestData", out TestData? data).Should().BeTrue();
+            var result = data.Should().BeOfType<TestData>().Subject;
+            expected.Equals(result);
+        }
+
+        using NrbfSerializerInClipboardDragDropScope nrbfScope1 = new(enable: true);
+        Clipboard.TryGetData("TestData", out TestData? testData).Should().BeTrue();
+        expected.Equals(testData.Should().BeOfType<TestData>().Subject);
     }
 
     [Serializable]
@@ -732,6 +741,9 @@ public class ClipboardTests
         Clipboard.SetData("TestData", expected);
 
         ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+
+        using NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: true);
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
     }
 
     [WinFormsFact]
@@ -741,6 +753,9 @@ public class ClipboardTests
         using BinaryFormatterScope scope = new(enable: true);
         Clipboard.SetData("TestData", expected);
 
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+
+        using NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: true);
         ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
     }
 }

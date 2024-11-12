@@ -108,7 +108,7 @@ public unsafe partial class DataObject
                     DataFormats.FileDropConstant => ReadFileListFromHDROP((HDROP)(nint)hglobal),
                     CF_DEPRECATED_FILENAME => new string[] { ReadStringFromHGLOBAL(hglobal, unicode: false) },
                     CF_DEPRECATED_FILENAMEW => new string[] { ReadStringFromHGLOBAL(hglobal, unicode: true) },
-                    _ => ReadObjectOrStreamFromHGLOBAL<T>(hglobal, resolver, RestrictDeserializationToSafeTypes(format), legacyMode)
+                    _ => ReadObjectOrStreamFromHGLOBAL(RestrictDeserializationToSafeTypes(format))
                 };
 
                 if (value is T t)
@@ -118,14 +118,14 @@ public unsafe partial class DataObject
                 }
 
                 return false;
-            }
 
-            private static object? ReadObjectOrStreamFromHGLOBAL<T>(HGLOBAL hglobal, Func<TypeName, Type>? resolver, bool restrictDeserialization, bool legacyMode)
-            {
-                MemoryStream stream = ReadByteStreamFromHGLOBAL(hglobal, out bool isSerializedObject);
-                return !isSerializedObject
-                    ? stream
-                    : BinaryFormatUtilities.ReadObjectFromStream<T>(stream, resolver, restrictDeserialization, legacyMode);
+                object? ReadObjectOrStreamFromHGLOBAL(bool restrictDeserialization)
+                {
+                    MemoryStream stream = ReadByteStreamFromHGLOBAL(hglobal, out bool isSerializedObject);
+                    return !isSerializedObject
+                        ? stream
+                        : BinaryFormatUtilities.ReadObjectFromStream<T>(stream, resolver, restrictDeserialization, legacyMode);
+                }
             }
 
             private static unsafe MemoryStream ReadByteStreamFromHGLOBAL(HGLOBAL hglobal, out bool isSerializedObject)
@@ -144,7 +144,7 @@ public unsafe partial class DataObject
                     int index = 0;
 
                     // The object here can either be a stream or a serialized object. We identify a serialized object
-                    // by writing the bytes for the guid serializedObjectID at the start of the stream.
+                    // by writing the bytes for the GUID serializedObjectID at the start of the stream.
 
                     if (isSerializedObject = bytes.AsSpan().StartsWith(s_serializedObjectID))
                     {
@@ -225,14 +225,19 @@ public unsafe partial class DataObject
             /// <param name="doNotContinue">
             ///  A restricted type was encountered, do not continue trying to deserialize.
             /// </param>
-            /// <remarks>
-            ///   <para>
+            /// <returns>
+            ///  <para>
+            ///   <see langword="true"/> if the managed object of <see cref="Type"/> <typeparamref name="T"/> was successfully created,
+            ///   <see langword="false"/> if the payload does not contain the specified format or the specified type.
+            ///  </para>
+            ///  <para>
             ///   If <paramref name="dataObject"/> contains <see cref="MemoryStream"/> that contains a serialized object,
             ///   we return that object cast to <typeparamref name="T"/> or null. If the <see cref="MemoryStream"/> is
             ///   not a serialized object, and a stream was requested, i.e. can be cast to <typeparamref name="T"/>
             ///   we return that <see cref="MemoryStream"/>.
-            ///   </para>
-            /// </remarks>
+            ///  </para>
+            /// </returns>
+            /// <exception cref="NotSupportedException"> is deserialization failed.</exception>
             private static bool TryGetObjectFromDataObject<T>(
                 Com.IDataObject* dataObject,
                 string format,
@@ -244,10 +249,11 @@ public unsafe partial class DataObject
                 data = default;
                 doNotContinue = false;
                 bool result = false;
+
                 try
                 {
                     // Try to get the data as a bitmap first.
-                    if (typeof(Bitmap).IsAssignableTo(typeof(T)) && TryGetBitmapData(dataObject, format, out Bitmap? bitmap))
+                    if (typeof(Bitmap) == typeof(T) && TryGetBitmapData(dataObject, format, out Bitmap? bitmap))
                     {
                         data = (T)(object)bitmap;
                         return true;
@@ -496,7 +502,7 @@ public unsafe partial class DataObject
 
             bool IDataObject.GetDataPresent(Type format) => GetDataPresent(format.FullName!);
 
-                        bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool ITypedDataObject.TryGetData<T>(
                 string format,
                 Func<TypeName, Type> resolver,
                 bool autoConvert,
@@ -511,18 +517,18 @@ public unsafe partial class DataObject
                 return TryGetDataInternal(format, resolver, autoConvert, legacyMode: false, out data);
             }
 
-            bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool ITypedDataObject.TryGetData<T>(
                 string format,
                 bool autoConvert,
                 [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
                 TryGetDataInternal(format, NotSupportedResolver, autoConvert, legacyMode: false, out data);
 
-            bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool ITypedDataObject.TryGetData<T>(
                 string format,
                 [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
                 TryGetDataInternal(format, NotSupportedResolver, autoConvert: false, legacyMode: false, out data);
 
-            bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            bool ITypedDataObject.TryGetData<T>(
                 [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
                 TryGetDataInternal(typeof(T).FullName!, NotSupportedResolver, autoConvert: false, legacyMode: false, out data);
 

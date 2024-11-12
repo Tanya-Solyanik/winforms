@@ -331,16 +331,21 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         ((Action)(() => WriteObjectToStream(value))).Should().Throw<NotSupportedException>();
 
-        using (BinaryFormatterScope scope = new(enable: true))
+        using (NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: false))
         {
-            ((Action)(() => WriteObjectToStream(value))).Should().Throw<NotSupportedException>();
+            using (BinaryFormatterScope scope = new(enable: true))
+            {
+                ((Action)(() => WriteObjectToStream(value))).Should().Throw<NotSupportedException>();
 
-            using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
-            WriteObjectToStream(value);
-            ReadObjectFromStream().Should().BeEquivalentTo(value);
+                using BinaryFormatterInClipboardDragDropScope clipboardDragDropScope = new(enable: true);
+                WriteObjectToStream(value);
+                ReadObjectFromStream().Should().BeEquivalentTo(value);
+            }
+
+            ((Action)(() => ReadObjectFromStream())).Should().Throw<NotSupportedException>();
         }
 
-        // Doesn't attempt to access BinaryFormatter.
+        // Don't attempt to access BinaryFormatter, use NRBF deserializer instead.
         ReadObjectFromStream().Should().BeNull();
     }
 
@@ -350,8 +355,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         ((Action)(() => WriteObjectToStream(value, restrictSerialization: true))).Should().Throw<NotSupportedException>();
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
         ((Action)(() => WriteObjectToStream(value, restrictSerialization: true))).Should().Throw<SerializationException>();
     }
 
@@ -366,8 +370,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
         value.SetValue(202u, 2, 3);
         value.SetValue(203u, 2, 4);
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
         var result = RoundTripObject(value).Should().BeOfType<uint[,]>().Subject;
 
         result.Rank.Should().Be(2);
@@ -386,29 +389,33 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     [Fact]
     public void RoundTripOfType_Unsupported()
     {
-        List<object> value = new() { "text" };
-        using (BinaryFormatterScope scope = new(enable: true))
-        using (BinaryFormatterInClipboardScope clipboardScope = new(enable: true))
+        List<object> value = ["text"];
+        using (FullCompatScope scope = new())
         {
             WriteObjectToStream(value);
 
+            ReadAndValidate();
+        }
+
+        using (NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: false))
+        {
+            ReadObjectFromStream<List<object>>(ObjectResolver).Should().BeNull();
+        }
+
+        ReadAndValidate();
+
+        void ReadAndValidate()
+        {
             var result = ReadObjectFromStream<List<object>>(ObjectResolver).Should().BeOfType<List<object>>().Subject;
             result.Count.Should().Be(1);
             result[0].Should().Be("text");
         }
-
-        ReadObjectFromStream<List<object>>(ObjectResolver).Should().BeNull();
     }
 
-    private static Type ObjectResolver(TypeName typeName)
-    {
-        if (typeof(object).FullName! == typeName.FullName)
-        {
-            return typeof(object);
-        }
-
-        throw new NotSupportedException($"Can't resolve {typeName.FullName}");
-    }
+    private static Type ObjectResolver(TypeName typeName) =>
+        typeof(object).FullName == typeName.FullName
+            ? typeof(object)
+            : throw new NotSupportedException($"Can't resolve {typeName.FullName}");
 
     [Fact]
     public void RoundTripOfType_AsUnmatchingType_Simple()
@@ -427,8 +434,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
 
         ReadObjectFromStream<Control>(DataObject.NotSupportedResolver, restrictDeserialization: true).Should().BeNull();
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
         ReadObjectFromStream<Control>(DataObject.NotSupportedResolver, restrictDeserialization: true).Should().BeNull();
     }
 
@@ -445,8 +451,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         int?[] value = [101, null, 303];
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
         ((Action)(() => RoundTripOfType<int?[]>(value))).Should().Throw<SerializationException>();
     }
 
@@ -455,8 +460,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         int?[] value = [101, null, 303];
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
         ((Action)(() => RoundTripOfType_RestrictedFormat<int?[]>(value))).Should().Throw<SerializationException>();
     }
 
@@ -471,8 +475,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
         value.SetValue(202u, 2, 3);
         value.SetValue(203u, 2, 4);
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
         ((Action)(() => RoundTripOfType<uint[,]>(value))).Should().Throw<NotSupportedException>();
     }
 
@@ -481,8 +484,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         int?[] value = [101, null, 303];
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
         RoundTripOfType<int?[]>(value, NullableIntArrayResolver).Should().BeEquivalentTo(value);
     }
 
@@ -511,8 +513,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         TestData value = new(new(10, 10), 2);
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
 
         var result = RoundTripOfType<TestDataBase>(value, TestDataResolver).Should().BeOfType<TestData>().Subject;
 
@@ -524,8 +525,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         TestData value = new(new(10, 10), 2);
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
 
         WriteObjectToStream(value);
 
@@ -540,8 +540,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         using Font value = new("Microsoft Sans Serif", emSize: 10);
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
 
         using Font result = RoundTripOfType<Font>(value, FontResolver).Should().BeOfType<Font>().Subject;
         result.Should().Be(value);
@@ -549,11 +548,11 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
 
     private static Type FontResolver(TypeName typeName)
     {
-        (string name, Type type)[] allowedTypes =
+        (string? name, Type type)[] allowedTypes =
         [
-            (typeof(FontStyle).FullName!, typeof(FontStyle)),
-            (typeof(FontFamily).FullName!, typeof(FontFamily)),
-            (typeof(GraphicsUnit).FullName!, typeof(GraphicsUnit)),
+            (typeof(FontStyle).FullName, typeof(FontStyle)),
+            (typeof(FontFamily).FullName, typeof(FontFamily)),
+            (typeof(GraphicsUnit).FullName, typeof(GraphicsUnit)),
         ];
 
         string fullName = typeName.FullName;
@@ -574,8 +573,7 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     {
         TestDataBase.InnerData value = new("simple class");
 
-        using BinaryFormatterScope scope = new(enable: true);
-        using BinaryFormatterInClipboardScope clipboardScope = new(enable: true);
+        using FullCompatScope scope = new();
 
         var result = RoundTripOfType<TestDataBase.InnerData>(value).Should().BeOfType<TestDataBase.InnerData>().Subject;
 
@@ -614,6 +612,8 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
         {
             Count = count;
         }
+
+        private const float Delta = 0.0003f;
 
         // BinaryFormatter resolves primitive types or arrays of primitive types with no callback to the resolver.
         public int? Count;
@@ -686,8 +686,6 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
         }
     }
 
-    private const float Delta = 0.0003f;
-
     private static Type TestDataResolver(TypeName typeName)
     {
         (string name, Type type)[] allowedTypes =
@@ -713,10 +711,10 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
     public void ReadFontSerializedOnNet481()
     {
         // This string was generated on net481.
-        // Clipboard.SetData("TestData", new Font("Arial", 12));
+        // Clipboard.SetData("TestData", new Font("Microsoft Sans Serif", 10));
         // And the resulting stream was saved as a string
         // string text = Convert.ToBase64String(stream.ToArray());
-        string arielFont =
+        string font =
             "AAEAAAD/////AQAAAAAAAAAMAgAAAFFTeXN0ZW0uRHJhd2luZywgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJl"
             + "PW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWIwM2Y1ZjdmMTFkNTBhM2EFAQAAABNTeXN0ZW0uRHJhd2luZy5G"
             + "b250BAAAAAROYW1lBFNpemUFU3R5bGUEVW5pdAEABAQLGFN5c3RlbS5EcmF3aW5nLkZvbnRTdHlsZQIAAAAb"
@@ -724,12 +722,45 @@ public partial class BinaryFormatUtilitiesTests : IDisposable
             + "IEEF/P///xhTeXN0ZW0uRHJhd2luZy5Gb250U3R5bGUBAAAAB3ZhbHVlX18ACAIAAAAAAAAABfv///8bU3lz"
             + "dGVtLkRyYXdpbmcuR3JhcGhpY3NVbml0AQAAAAd2YWx1ZV9fAAgCAAAAAwAAAAs=";
 
-        byte[] bytes = Convert.FromBase64String(arielFont);
-        using MemoryStream stream = new MemoryStream(bytes);
-        var result = Utilities.ReadObjectFromStream<object>(
+        byte[] bytes = Convert.FromBase64String(font);
+        using MemoryStream stream = new(bytes);
+
+        stream.Position = 0;
+        // Default deserialization with the NRBF deserializer.
+        var result = Utilities.ReadObjectFromStream<Font>(
+            stream,
+            resolver: FontResolver,
+            restrictDeserialization: false,
+            legacyMode: false).Should().BeOfType<Font>().Subject;
+        result.Name.Should().Be("Microsoft Sans Serif");
+        result.Size.Should().Be(10);
+
+        stream.Position = 0;
+        using (FullCompatScope scope = new())
+        {
+            result = Utilities.ReadObjectFromStream<object>(
+                stream,
+                resolver: null,
+                restrictDeserialization: false,
+                legacyMode: true).Should().BeOfType<Font>().Subject;
+            result.Name.Should().Be("Microsoft Sans Serif");
+            result.Size.Should().Be(10);
+
+            stream.Position = 0;
+            result = Utilities.ReadObjectFromStream<Font>(
+                stream,
+                resolver: FontResolver,
+                restrictDeserialization: false,
+                legacyMode: false).Should().BeOfType<Font>().Subject;
+            result.Name.Should().Be("Microsoft Sans Serif");
+            result.Size.Should().Be(10);
+        }
+
+        using NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: false);
+        Utilities.ReadObjectFromStream<object>(
             stream,
             resolver: null,
             restrictDeserialization: false,
-            legacyMode: true);
+            legacyMode: true).Should().BeNull();
     }
 }

@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using System.Drawing;
 using System.Private.Windows.Core.BinaryFormat;
 using System.Reflection;
@@ -31,7 +30,6 @@ public partial class DataObject
 
         // .NET Framework PublicKeyToken=b03f5f7f11d50a3a
         private static ReadOnlySpan<byte> AllowedToken => [0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A];
-        private static ImmutableArray<byte> AllowedTokenArray => AllowedToken.ToImmutableArray();
 
         public override Type? BindToType(string assemblyName, string typeName)
         {
@@ -72,13 +70,13 @@ public partial class DataObject
 
         [RequiresUnreferencedCode("Calls System.Reflection.Assembly.GetType(String)")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        Type ITypeResolver.GetType(TypeName typeName)
+        public Type GetType(TypeName typeName)
         {
             if (AllowedTypeName.Equals(typeName.Name, StringComparison.Ordinal)
                 && typeName.AssemblyName is AssemblyNameInfo info)
             {
                 if (AllowedAssemblyName.Equals(info.Name, StringComparison.Ordinal)
-                    && AllowedTokenArray.SequenceEqual(info.PublicKeyOrToken))
+                    && AllowedToken.SequenceEqual(info.PublicKeyOrToken.AsSpan()))
                 {
                     return typeof(Bitmap);
                 }

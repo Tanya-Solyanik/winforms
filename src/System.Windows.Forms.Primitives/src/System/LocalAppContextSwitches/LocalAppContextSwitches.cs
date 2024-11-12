@@ -121,6 +121,11 @@ internal static partial class LocalAppContextSwitches
                 return false;
             }
 
+            if (switchName == ClipboardDragDropEnableNrbfSerializationSwitchName)
+            {
+                return true;
+            }
+
             if (framework.Version.Major >= 8)
             {
                 // Behavior changes added in .NET 8
@@ -245,10 +250,13 @@ internal static partial class LocalAppContextSwitches
     /// <summary>
     ///  If <see langword="true"/>, then Clipboard Get methods will use System.Windows.Forms.BinaryFormat.Deserializer
     ///  to deserialize the payload if needed.  This is an alternative to deserialization using use <see cref="BinaryFormatter"/>.
+    ///  This option is enabled by default, disable it and enable the <see cref="BinaryFormatter"/> deserialization
+    ///  to get full compatibility with the downlevel versions of .NET.
     /// </summary>
     public static bool ClipboardDragDropEnableNrbfSerialization
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => GetCachedSwitchValue(ClipboardDragDropEnableNrbfSerializationSwitchName, ref s_clipboardDragDropEnableNrbfSerialization);
+        get =>
+            GetCachedSwitchValue(ClipboardDragDropEnableNrbfSerializationSwitchName, ref s_clipboardDragDropEnableNrbfSerialization);
     }
 }

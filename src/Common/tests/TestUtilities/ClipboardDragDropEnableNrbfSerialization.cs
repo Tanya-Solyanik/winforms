@@ -3,13 +3,13 @@
 
 namespace System;
 
-public readonly ref struct NrbfSerializerInClipboardScope
+public readonly ref struct NrbfSerializerInClipboardDragDropScope
 {
     private readonly AppContextSwitchScope _switchScope;
 
-    public NrbfSerializerInClipboardScope(bool enable)
+    public NrbfSerializerInClipboardDragDropScope(bool enable)
     {
-        Monitor.Enter(typeof(NrbfSerializerInClipboardScope));
+        Monitor.Enter(typeof(NrbfSerializerInClipboardDragDropScope));
         _switchScope = new(AppContextSwitchNames.ClipboardDragDropEnableNrbfSerializationSwitchName, enable);
     }
 
@@ -21,7 +21,7 @@ public readonly ref struct NrbfSerializerInClipboardScope
         }
         finally
         {
-            Monitor.Exit(typeof(NrbfSerializerInClipboardScope));
+            Monitor.Exit(typeof(NrbfSerializerInClipboardDragDropScope));
         }
     }
 }

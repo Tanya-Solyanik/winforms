@@ -105,40 +105,40 @@ public unsafe partial class DataObject
                 or DataFormats.WmfConstant;
 
         #region IDataObject
-        object? IDataObject.GetData(string format, bool autoConvert) => _winFormsDataObject.GetData(format, autoConvert);
-        object? IDataObject.GetData(string format) => _winFormsDataObject.GetData(format);
-        object? IDataObject.GetData(Type format) => _winFormsDataObject.GetData(format);
-        bool IDataObject.GetDataPresent(string format, bool autoConvert) => _winFormsDataObject.GetDataPresent(format, autoConvert);
-        bool IDataObject.GetDataPresent(string format) => _winFormsDataObject.GetDataPresent(format);
-        bool IDataObject.GetDataPresent(Type format) => _winFormsDataObject.GetDataPresent(format);
-        string[] IDataObject.GetFormats(bool autoConvert) => _winFormsDataObject.GetFormats(autoConvert);
-        string[] IDataObject.GetFormats() => _winFormsDataObject.GetFormats();
-        void IDataObject.SetData(string format, bool autoConvert, object? data) => _winFormsDataObject.SetData(format, autoConvert, data);
-        void IDataObject.SetData(string format, object? data) => _winFormsDataObject.SetData(format, data);
-        void IDataObject.SetData(Type format, object? data) => _winFormsDataObject.SetData(format, data);
-        void IDataObject.SetData(object? data) => _winFormsDataObject.SetData(data);
+        public object? GetData(string format, bool autoConvert) => _winFormsDataObject.GetData(format, autoConvert);
+        public object? GetData(string format) => _winFormsDataObject.GetData(format);
+        public object? GetData(Type format) => _winFormsDataObject.GetData(format);
+        public bool GetDataPresent(string format, bool autoConvert) => _winFormsDataObject.GetDataPresent(format, autoConvert);
+        public bool GetDataPresent(string format) => _winFormsDataObject.GetDataPresent(format);
+        public bool GetDataPresent(Type format) => _winFormsDataObject.GetDataPresent(format);
+        public string[] GetFormats(bool autoConvert) => _winFormsDataObject.GetFormats(autoConvert);
+        public string[] GetFormats() => _winFormsDataObject.GetFormats();
+        public void SetData(string format, bool autoConvert, object? data) => _winFormsDataObject.SetData(format, autoConvert, data);
+        public void SetData(string format, object? data) => _winFormsDataObject.SetData(format, data);
+        public void SetData(Type format, object? data) => _winFormsDataObject.SetData(format, data);
+        public void SetData(object? data) => _winFormsDataObject.SetData(data);
         #endregion
 
         #region ITypedDataObject
-        bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        public bool TryGetData<T>(
             string format,
             Func<TypeName, Type> resolver,
             bool autoConvert,
             [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             _winFormsDataObject.TryGetData(format, resolver, autoConvert, out data);
 
-        bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        public bool TryGetData<T>(
             string format,
             bool autoConvert,
             [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             _winFormsDataObject.TryGetData(format, NotSupportedResolver, autoConvert, out data);
 
-        bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        public bool TryGetData<T>(
             string format,
             [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             _winFormsDataObject.TryGetData(format, NotSupportedResolver, autoConvert: false, out data);
 
-        bool ITypedDataObject.TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        public bool TryGetData<T>(
             [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             _winFormsDataObject.TryGetData(typeof(T).FullName!, NotSupportedResolver, autoConvert: false, out data);
         #endregion

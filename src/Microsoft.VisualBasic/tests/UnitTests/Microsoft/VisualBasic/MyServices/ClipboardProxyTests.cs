@@ -114,12 +114,9 @@ public class ClipboardProxyTests
     private static Type DataResolver(TypeName typeName)
     {
         Type type = typeof(DataWithObjectField);
-        TypeName parsed = TypeName.Parse($"{type.FullName}, {type.Assembly.FullName}");
 
         // Namespace-qualified type name.
-        if (typeName.FullName == parsed.FullName
-            // Ignore version, culture, and public key token in the assembly name.
-            && typeName.AssemblyName?.Name == parsed.AssemblyName?.Name)
+        if (type.FullName == typeName.FullName)
         {
             return type;
         }

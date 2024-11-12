@@ -49,6 +49,15 @@ public unsafe partial class DataObject :
     /// <summary>
     ///  Initializes a new instance of the <see cref="DataObject"/> class, containing the specified data.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   If <paramref name="data"/> implements an <see cref="IDataObject"/> interface,
+    ///   we strongly recommend implementing <see cref="ITypedDataObject"/> to support the
+    ///   `TryGetData` API family that restricts deserialization to the requested and known types.
+    ///   <see cref="Clipboard.TryGetData{T}(string, out T)"/> will throw <see cref="NotSupportedException"/>
+    ///   if <see cref="ITypedDataObject"/> is not implemented.
+    ///  </para>
+    /// </remarks>
     public DataObject(object data)
     {
         if (data is DataObject dataObject)
@@ -142,28 +151,27 @@ public unsafe partial class DataObject :
     #endregion
 
     #region ITypedDataObject
-    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+    [CLSCompliant(false)]
+    public bool TryGetData<T>(
         string format,
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
         Func<TypeName, Type> resolver,
-#pragma warning restore CS3001
         bool autoConvert,
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
-        // TODO (TanyaSo) argument validation here??
+            // TODO (TanyaSo) argument validation here??
             TryGetDataCore(format, resolver, autoConvert, out data);
 
-    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+    public bool TryGetData<T>(
         string format,
         bool autoConvert,
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             TryGetData(format, NotSupportedResolver, autoConvert, out data);
 
-    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+    public bool TryGetData<T>(
         string format,
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
         TryGetData(format, autoConvert: false, out data);
 
-    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+    public bool TryGetData<T>(
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             TryGetData(typeof(T).FullName!, out data);
     #endregion
@@ -235,25 +243,35 @@ public unsafe partial class DataObject :
         SetData(ConvertToDataFormats(format), false, textData);
     }
 
-    protected virtual bool TryGetDataCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+    [CLSCompliant(false)]
+    protected virtual bool TryGetDataCore<T>(
         string format,
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
         Func<TypeName, Type> resolver,
-#pragma warning restore CS3001
         bool autoConvert,
         [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
             ((ITypedDataObject)_innerData).TryGetData(format, resolver, autoConvert, out data);
 
-    internal static bool ValidateTryGetDataArguments<T>(string format, Func<TypeName, Type> resolver)
+    /// <summary>
+    ///  Verify if the requested format is valid and compatible with the requested type <typeparamref name="T"/>.
+    ///  If a custom <paramref name="resolver"/> is provided, it will be validated at the resolution time.
+    /// </summary>
+    internal static bool ValidateTryGetDataArguments<T>(string format, Func<TypeName, Type>? resolver = default)
     {
-        if (!ValidateFormat<T>(format))
+        if (string.IsNullOrWhiteSpace(format))
         {
             return false;
         }
 
+        if (IsInvalidPredefinedFormatType(format))
+        {
+            throw new NotSupportedException(
+                $"'{typeof(T).Name}' is not compatible with the specified format `{format}`.");
+        }
+
         if (resolver is null
             && !IsRestrictedFormat(format)
-            && IsUnboundedType<T>())
+            // Check is a convenience for simple usages where user isn't passing a resolver explicitly.
+            && IsUnboundedType())
         {
             // Tanyaso TODO: localize string
             throw new NotSupportedException(
@@ -263,94 +281,61 @@ public unsafe partial class DataObject :
         }
 
         return true;
-    }
 
-    internal static bool ValidateTryGetDataArguments<T>(string format)
-    {
-        if (!ValidateFormat<T>(format))
+        static bool IsUnboundedType()
         {
-            return false;
+            if (typeof(T) == typeof(object))
+            {
+                return true;
+            }
+
+            Type type = typeof(T);
+            return type.IsInterface || type.IsAbstract;
         }
 
-        Type type = typeof(T);
-        if (!IsRestrictedFormat(format)
-            // check is a convenience for simple usages where you aren't passing a resolver explicitly.
-            && IsUnboundedType<T>())
+        static bool IsInvalidPredefinedFormatType(string format) => format switch
         {
-            // TODO: localize string
-            throw new NotSupportedException(
-                $"'{typeof(T).Name}' is not a concrete type, and could allow for " +
-                $"unbounded deserialization.  Use a concrete type or define a resolver " +
-                $"function that supports types that you are retrieving from the Clipboard.");
-        }
+            DataFormats.TextConstant
+                or DataFormats.UnicodeTextConstant
+                or DataFormats.StringConstant
+                or DataFormats.RtfConstant
+                or DataFormats.HtmlConstant
+                or DataFormats.OemTextConstant => typeof(string) != typeof(T),
 
-        return true;
-    }
+            DataFormats.FileDropConstant
+                or CF_DEPRECATED_FILENAME
+                or CF_DEPRECATED_FILENAMEW => typeof(string[]) != typeof(T),
 
-    private static bool IsUnboundedType<T>()
-    {
-        if (typeof(T) == typeof(object))
-        {
-            return true;
-        }
-
-        Type type = typeof(T);
-        return type.IsInterface || type.IsAbstract;
-    }
-
-    /// <devdoc>
-    ///  For OLE formats, we support only a few known managed types.
-    ///  For unknown formats, return true, they will be further validated when reading the data.
-    /// </devdoc>
-    private static bool ValidateFormat<T>(string format)
-    {
-        if (string.IsNullOrWhiteSpace(format))
-        {
-            return false;
-        }
-
-        return format switch
-        {
-            DataFormats.TextConstant or
-            DataFormats.UnicodeTextConstant or
-            DataFormats.StringConstant or
-            DataFormats.RtfConstant or
-            DataFormats.HtmlConstant or
-            DataFormats.OemTextConstant => typeof(string) == typeof(T),
-
-            DataFormats.FileDropConstant or
-            CF_DEPRECATED_FILENAME or
-            CF_DEPRECATED_FILENAMEW => typeof(string[]) == typeof(T),
-
-            DataFormats.BitmapConstant or BitmapFullName => typeof(Bitmap) == typeof(T) || typeof(Image) == typeof(T),
-            _ => true
+            DataFormats.BitmapConstant or BitmapFullName =>
+                typeof(Bitmap) != typeof(T) && typeof(Image) != typeof(T),
+            _ => false
         };
-    }
 
-    private static bool IsRestrictedFormat(string format) =>
-        format is DataFormats.StringConstant
-        or BitmapFullName
-        or DataFormats.CsvConstant
-        or DataFormats.DibConstant
-        or DataFormats.DifConstant
-        or DataFormats.LocaleConstant
-        or DataFormats.PenDataConstant
-        or DataFormats.RiffConstant
-        or DataFormats.SymbolicLinkConstant
-        or DataFormats.TiffConstant
-        or DataFormats.WaveAudioConstant
-        or DataFormats.BitmapConstant
-        or DataFormats.EmfConstant
-        or DataFormats.PaletteConstant
-        or DataFormats.WmfConstant
-        or DataFormats.TextConstant
-        or DataFormats.UnicodeTextConstant
-        or DataFormats.RtfConstant
-        or DataFormats.HtmlConstant
-        or DataFormats.OemTextConstant
-        or DataFormats.FileDropConstant
-        or CF_DEPRECATED_FILENAME
-        or CF_DEPRECATED_FILENAMEW;
+        static bool IsRestrictedFormat(string format) =>
+            format is DataFormats.StringConstant
+                or BitmapFullName
+                or DataFormats.CsvConstant
+                or DataFormats.DibConstant
+                or DataFormats.DifConstant
+                or DataFormats.LocaleConstant
+                or DataFormats.PenDataConstant
+                or DataFormats.RiffConstant
+                or DataFormats.SymbolicLinkConstant
+                or DataFormats.TiffConstant
+                or DataFormats.WaveAudioConstant
+                or DataFormats.BitmapConstant
+                or DataFormats.EmfConstant
+                or DataFormats.PaletteConstant
+                or DataFormats.WmfConstant
+                or DataFormats.TextConstant
+                or DataFormats.UnicodeTextConstant
+                or DataFormats.RtfConstant
+                or DataFormats.HtmlConstant
+                or DataFormats.OemTextConstant
+                or DataFormats.FileDropConstant
+                or CF_DEPRECATED_FILENAME
+                or CF_DEPRECATED_FILENAMEW;
+    }
 
     private static string ConvertToDataFormats(TextDataFormat format) => format switch
     {

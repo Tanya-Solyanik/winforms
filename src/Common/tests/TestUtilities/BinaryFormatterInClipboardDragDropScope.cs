@@ -3,13 +3,13 @@
 
 namespace System;
 
-public readonly ref struct BinaryFormatterInClipboardScope
+public readonly ref struct BinaryFormatterInClipboardDragDropScope
 {
     private readonly AppContextSwitchScope _switchScope;
 
-    public BinaryFormatterInClipboardScope(bool enable)
+    public BinaryFormatterInClipboardDragDropScope(bool enable)
     {
-        Monitor.Enter(typeof(BinaryFormatterInClipboardScope));
+        Monitor.Enter(typeof(BinaryFormatterInClipboardDragDropScope));
         _switchScope = new(AppContextSwitchNames.ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName, enable);
     }
 
@@ -21,7 +21,7 @@ public readonly ref struct BinaryFormatterInClipboardScope
         }
         finally
         {
-            Monitor.Exit(typeof(BinaryFormatterInClipboardScope));
+            Monitor.Exit(typeof(BinaryFormatterInClipboardDragDropScope));
         }
     }
 }

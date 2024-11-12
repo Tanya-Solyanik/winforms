@@ -383,7 +383,7 @@ public partial class DataObjectTests
 
         public int Count { get; private set; }
 
-        protected override bool TryGetDataCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        protected override bool TryGetDataCore<T>(
             string format,
             Func<TypeName, Type> resolver,
             bool autoConvert,

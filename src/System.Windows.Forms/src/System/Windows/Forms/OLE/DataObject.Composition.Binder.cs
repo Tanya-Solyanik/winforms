@@ -1,11 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using System.Private.Windows.Core.BinaryFormat;
 using System.Reflection.Metadata;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using Switches = System.Windows.Forms.Primitives.LocalAppContextSwitches;
+using TypeInfo = System.Private.Windows.Core.BinaryFormat.TypeInfo;
 
 namespace System.Windows.Forms;
 
@@ -13,6 +14,14 @@ public unsafe partial class DataObject
 {
     internal unsafe partial class Composition
     {
+        /// <summary>
+        ///  A type resolver for use in the <see cref="NativeToWinFormsAdapter"/> when processing
+        ///  binary formatted stream contained in our <see cref="DataObject"/> class using the typed
+        ///  consumption side APIs, such as<see cref="DataObject.TryGetData{T}(out T)"/>.
+        ///  This class resolves primitive types, exchange types from System.Drawing.Primitives,
+        ///  and common WinForms types in addition to the <see cref="Type"/> requested by the user.
+        ///  This type is used in <see cref="BinaryFormatter"/> and NRBF deserialization.
+        /// </summary>
         internal sealed class Binder : SerializationBinder, ITypeResolver
         {
             private readonly Func<TypeName, Type>? _resolver;
@@ -20,7 +29,7 @@ public unsafe partial class DataObject
             private readonly bool _legacyMode;
 
             // This is needed to resolve fields of the requested type T when using deserializers.
-            private readonly Dictionary<string, Type> _mscorlibTypeCache = new()
+            private static readonly Dictionary<string, Type> s_mscorlibTypeCache = new()
             {
                 { "System.Byte", typeof(byte) },
                 { "System.SByte", typeof(sbyte) },
@@ -75,7 +84,7 @@ public unsafe partial class DataObject
                 { "System.TimeSpan[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]", typeof(TimeSpan[]) }
             };
 
-            private readonly Dictionary<(string, string), Type> _commonTypes = new()
+            private static readonly Dictionary<(string, string), Type> s_commonTypes = new()
             {
                 { ("System.Windows.Forms.ImageListStreamer", "System.Windows.Forms"), typeof(ImageListStreamer) },
                 { ("System.Drawing.Bitmap", "System.Drawing"), typeof(Drawing.Bitmap) },
@@ -90,51 +99,42 @@ public unsafe partial class DataObject
                 { ("System.Drawing.Color", "System.Drawing"), typeof(Drawing.Color) }
             };
 
+            private readonly Dictionary<TypeName, Type> _userTypes = new(TypeNameComparer.Default);
+
+            /// <summary>
+            ///  Type resolver for use with <see cref="BinaryFormatter"/> and NRBF deserializers to restrict types
+            ///  that can be instantiated.
+            /// </summary>
+            /// <param name="type"><see cref="Type"/> that the user expects to read from the binary formatter stream.</param>
+            /// <param name="resolver">
+            ///  Provides the list of custom allowed types that user considered safe to
+            ///  deserialize from the payload. Resolver should recognize the closure of all non-primitive and not known types
+            ///  in the payload, such as field types and type in the inheritance hierarchy and the means to match
+            ///  these types to the <see cref="TypeName"/> provided in the stream.
+            /// </param>
+            /// <param name="legacyMode">
+            ///  <see langword="true"/> if the user had not requested any specific type,
+            ///  i.e. the call originates from <see cref="DataObject.GetData(string)"/> API family,
+            ///  that returns an <see cref="object"/>. <see langword="false"/> if the user had requested a specific type,
+            ///  using <see cref="DataObject.TryGetData{T}(out T)"/> API family.
+            /// </param>
             public Binder(Type type, Func<TypeName, Type>? resolver, bool legacyMode)
             {
                 _resolver = resolver;
                 _type = type.OrThrowIfNull();
 
+                _userTypes.Add(TypeName.Parse(type.AssemblyQualifiedName.OrThrowIfNull()), type);
                 _legacyMode = legacyMode;
             }
 
             public override Type? BindToType(string assemblyName, string typeName)
             {
-                if (string.IsNullOrWhiteSpace(assemblyName))
-                {
-                    throw new ArgumentNullException(nameof(assemblyName));
-                }
+                ArgumentException.ThrowIfNullOrWhiteSpace(assemblyName);
+                ArgumentException.ThrowIfNullOrWhiteSpace(typeName);
 
-                if (string.IsNullOrWhiteSpace(typeName))
+                if (GetCachedType(assemblyName, typeName, null) is Type type)
                 {
-                    throw new ArgumentNullException(nameof(typeName));
-                }
-
-                return GetType(assemblyName, typeName, null);
-            }
-
-            private Type? GetType(string assemblyName, string fullTypeName, TypeName? typeName)
-            {
-                // We assume all built-in types are normalized to the mscorlib assembly, as BinaryFormatter
-                // and NRBF reader and deserializer are doing so for compatibility with .NET Framework.
-                if (assemblyName.Equals(TypeInfo.MscorlibAssemblyName, StringComparison.Ordinal)
-                    && _mscorlibTypeCache.TryGetValue(fullTypeName, out Type? builtIn))
-                {
-                    return builtIn;
-                }
-
-                // Ignore version, culture, and public key token and compare the short names.
-                string shortAssemblyName = assemblyName.Split(',')[0].Trim();
-                if (_commonTypes.TryGetValue((fullTypeName, shortAssemblyName), out Type? knownType))
-                {
-                    return knownType;
-                }
-
-                typeName ??= TypeName.Parse($"{fullTypeName}, {assemblyName}");
-                if (Matches(_type, typeName))
-                {
-                    _commonTypes.Add((fullTypeName, shortAssemblyName), _type);
-                    return _type;
+                    return type;
                 }
 
                 if (_legacyMode)
@@ -148,94 +148,77 @@ public unsafe partial class DataObject
                 if (_resolver is null)
                 {
                     throw new NotSupportedException($"'resolver' function is required in '{nameof(Clipboard.TryGetData)}'" +
-                        $" method to resolve '{fullTypeName}' from '{assemblyName}'");
+                        $" method to resolve '{typeName}' from '{assemblyName}'");
                 }
 
-                Type type = _resolver(typeName)
+                TypeName parsed = TypeName.Parse($"{typeName}, {assemblyName}");
+                Type resolved = _resolver(parsed)
                     ?? throw new NotSupportedException($"'resolver' function provided in '{nameof(Clipboard.TryGetData)}'" +
                         $" method should never return a null. It should throw a '{nameof(NotSupportedException)}' when encountering unsupported types.");
 
-                _commonTypes.Add((fullTypeName, shortAssemblyName), type);
-                return type;
+                _userTypes.Add(parsed, resolved);
+                return resolved;
+            }
+
+            private Type? GetCachedType(string assemblyName, string fullTypeName, TypeName? typeName)
+            {
+                // We assume all built-in types are normalized to the mscorlib assembly, as BinaryFormatter
+                // and NRBF reader and deserializer are doing so for compatibility with .NET Framework.
+                if (assemblyName.Equals(TypeInfo.MscorlibAssemblyName, StringComparison.Ordinal)
+                    && s_mscorlibTypeCache.TryGetValue(fullTypeName, out Type? builtIn))
+                {
+                    return builtIn;
+                }
+
+                // Ignore version, culture, and public key token and compare the short names.
+                string shortAssemblyName = assemblyName.Split(',')[0].Trim();
+                if (s_commonTypes.TryGetValue((fullTypeName, shortAssemblyName), out Type? knownType))
+                {
+                    return knownType;
+                }
+
+                typeName ??= TypeName.Parse($"{fullTypeName}, {assemblyName}");
+                if (_userTypes.TryGetValue(typeName, out Type? userType))
+                {
+                    return userType;
+                }
+
+                return null;
             }
 
             [RequiresUnreferencedCode("Calls System.Reflection.Assembly.GetType(String)")]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type ITypeResolver.GetType(TypeName typeName)
+            public Type GetType(TypeName typeName)
             {
-                if (typeName.AssemblyName is null || typeName.AssemblyName.FullName is not string fullName || string.IsNullOrWhiteSpace(fullName))
+                if (typeName.AssemblyName is not AssemblyNameInfo info || info.FullName is not string fullName || string.IsNullOrWhiteSpace(fullName))
                 {
                     throw new ArgumentException($"{nameof(TypeName.AssemblyName)} is missing.", nameof(typeName));
                 }
 
-                Type? type;
-                try
+                if (GetCachedType(fullName, typeName.FullName, typeName) is Type type)
                 {
-                    type = GetType(fullName, typeName.FullName, typeName);
-                }
-                catch (Exception e)
-                {
-                    throw new SerializationException($"Could not find type {typeName.AssemblyQualifiedName}", e);
+                    return type;
                 }
 
-                return type ?? throw new SerializationException($"Could not find type {typeName.AssemblyQualifiedName}");
-            }
-
-            // Copied from https://github.com/dotnet/runtime/blob/79a71fc750652191eba18e19b3f98492e882cb5f/src/libraries/System.Formats.Nrbf/src/System/Formats/Nrbf/SerializationRecord.cs#L68
-            internal static bool Matches(Type type, TypeName typeName)
-            {
-                // We don't need to check for pointers and references to arrays,
-                // as it's impossible to serialize them with BF.
-                if (type.IsPointer || type.IsByRef)
+                if (_legacyMode)
                 {
-                    return false;
+                    throw new NotSupportedException($"Use '{nameof(Clipboard.TryGetData)}' with a 'resolver' function that defines the allowed types" +
+                        $" to deserialize {typeName.AssemblyQualifiedName}.");
                 }
 
-                if (type.IsArray != typeName.IsArray
-                    || type.IsConstructedGenericType != typeName.IsConstructedGenericType
-                    || type.IsNested != typeName.IsNested
-                    || (type.IsArray && type.GetArrayRank() != typeName.GetArrayRank())
-                    || type.IsSZArray != typeName.IsSZArray // int[] vs int[*]
-                    )
+                if (_resolver is null)
                 {
-                    return false;
+                    throw new NotSupportedException($"'resolver' function is required in '{nameof(Clipboard.TryGetData)}'" +
+                        $" method to resolve '{typeName.AssemblyQualifiedName}'");
                 }
 
-                if (type.FullName == typeName.FullName)
-                {
-                    return true; // The happy path with no type forwarding
-                }
-                else if (typeName.IsArray)
-                {
-                    return Matches(type.GetElementType()!, typeName.GetElementType());
-                }
-                else if (type.IsConstructedGenericType)
-                {
-                    if (!Matches(type.GetGenericTypeDefinition(), typeName.GetGenericTypeDefinition()))
-                    {
-                        return false;
-                    }
+                Type resolved = _resolver(typeName)
+                    ?? throw new NotSupportedException($"'resolver' function provided in '{nameof(Clipboard.TryGetData)}'" +
+                    $" method should never return a null. It should throw a '{nameof(NotSupportedException)}' when encountering an unsupported types.");
 
-                    ImmutableArray<TypeName> genericNames = typeName.GetGenericArguments();
-                    Type[] genericTypes = type.GetGenericArguments();
+                _userTypes.Add(typeName, resolved);
 
-                    if (genericNames.Length != genericTypes.Length)
-                    {
-                        return false;
-                    }
-
-                    for (int i = 0; i < genericTypes.Length; i++)
-                    {
-                        if (!Matches(genericTypes[i], genericNames[i]))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-
-                return false;
+                return resolved;
             }
         }
     }
