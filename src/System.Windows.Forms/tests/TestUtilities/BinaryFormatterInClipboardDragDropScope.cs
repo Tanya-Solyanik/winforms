@@ -5,12 +5,12 @@ namespace System;
 
 public readonly ref struct BinaryFormatterInClipboardDragDropScope
 {
-    private readonly AppContextSwitchScope _switchScope;
+    private readonly WinFormsAppContextSwitchScope _switchScope;
 
     public BinaryFormatterInClipboardDragDropScope(bool enable)
     {
         Monitor.Enter(typeof(BinaryFormatterInClipboardDragDropScope));
-        _switchScope = new(AppContextSwitchNames.ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName, enable);
+        _switchScope = new(WinFormsAppContextSwitchNames.ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName, enable);
     }
 
     public void Dispose()

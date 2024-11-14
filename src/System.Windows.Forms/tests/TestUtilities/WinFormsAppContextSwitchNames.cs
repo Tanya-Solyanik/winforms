@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Serialization.Formatters.Binary;
+
 namespace System;
 
 public static class WinFormsAppContextSwitchNames
@@ -50,4 +52,16 @@ public static class WinFormsAppContextSwitchNames
     /// </summary>
     public const string TreeNodeCollectionAddRangeRespectsSortOrder
         = "System.Windows.Forms.ApplyParentFontToMenus";
+
+    /// <summary>
+    ///  The switch that controls whether or not the <see cref="BinaryFormatter"/> is enabled in the Clipboard.
+    /// </summary>
+    public const string ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName
+        = "Windows.ClipboardDragDrop.EnableUnsafeBinaryFormatterSerialization";
+
+    /// <summary>
+    ///  The switch that controls whether or not the System.Windows.Forms.BinaryFormat.Deserializer is enabled in the Clipboard.
+    /// </summary>
+    public const string ClipboardDragDropEnableNrbfSerializationSwitchName
+        = "Windows.ClipboardDragDrop.EnableNrbfSerialization";
 }

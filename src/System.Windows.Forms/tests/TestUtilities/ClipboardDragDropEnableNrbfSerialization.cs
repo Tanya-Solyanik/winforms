@@ -5,12 +5,12 @@ namespace System;
 
 public readonly ref struct NrbfSerializerInClipboardDragDropScope
 {
-    private readonly AppContextSwitchScope _switchScope;
+    private readonly WinFormsAppContextSwitchScope _switchScope;
 
     public NrbfSerializerInClipboardDragDropScope(bool enable)
     {
         Monitor.Enter(typeof(NrbfSerializerInClipboardDragDropScope));
-        _switchScope = new(AppContextSwitchNames.ClipboardDragDropEnableNrbfSerializationSwitchName, enable);
+        _switchScope = new(WinFormsAppContextSwitchNames.ClipboardDragDropEnableNrbfSerializationSwitchName, enable);
     }
 
     public void Dispose()

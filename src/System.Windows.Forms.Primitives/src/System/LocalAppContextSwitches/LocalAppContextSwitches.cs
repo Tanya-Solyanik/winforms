@@ -96,58 +96,62 @@ internal static partial class LocalAppContextSwitches
         {
             cachedSwitchValue = isSwitchEnabled ? 1 /*true*/ : -1 /*false*/;
         }
+        else if (!hasSwitch)
+        {
+            AppContext.SetSwitch(switchName, isSwitchEnabled);
+        }
 
         return isSwitchEnabled;
+    }
 
-        static bool GetSwitchDefaultValue(string switchName)
+    private static bool GetSwitchDefaultValue(string switchName)
+    {
+        if (TargetFrameworkName is not { } framework)
         {
-            if (TargetFrameworkName is not { } framework)
-            {
-                return false;
-            }
-
-            if (switchName == NoClientNotificationsSwitchName)
-            {
-                return false;
-            }
-
-            if (switchName == TreeNodeCollectionAddRangeRespectsSortOrderSwitchName)
-            {
-                return true;
-            }
-
-            if (switchName == ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName)
-            {
-                return false;
-            }
-
-            if (switchName == ClipboardDragDropEnableNrbfSerializationSwitchName)
-            {
-                return true;
-            }
-
-            if (framework.Version.Major >= 8)
-            {
-                // Behavior changes added in .NET 8
-
-                if (switchName == ScaleTopLevelFormMinMaxSizeForDpiSwitchName)
-                {
-                    return true;
-                }
-
-                if (switchName == TrackBarModernRenderingSwitchName)
-                {
-                    return true;
-                }
-
-                if (switchName == ServicePointManagerCheckCrlSwitchName)
-                {
-                    return true;
-                }
-            }
-
             return false;
         }
+
+        if (switchName == NoClientNotificationsSwitchName)
+        {
+            return false;
+        }
+
+        if (switchName == TreeNodeCollectionAddRangeRespectsSortOrderSwitchName)
+        {
+            return true;
+        }
+
+        if (switchName == ClipboardDragDropEnableUnsafeBinaryFormatterSerializationSwitchName)
+        {
+            return false;
+        }
+
+        if (switchName == ClipboardDragDropEnableNrbfSerializationSwitchName)
+        {
+            return true;
+        }
+
+        if (framework.Version.Major >= 8)
+        {
+            // Behavior changes added in .NET 8
+
+            if (switchName == ScaleTopLevelFormMinMaxSizeForDpiSwitchName)
+            {
+                return true;
+            }
+
+            if (switchName == TrackBarModernRenderingSwitchName)
+            {
+                return true;
+            }
+
+            if (switchName == ServicePointManagerCheckCrlSwitchName)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -256,7 +260,6 @@ internal static partial class LocalAppContextSwitches
     public static bool ClipboardDragDropEnableNrbfSerialization
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get =>
-            GetCachedSwitchValue(ClipboardDragDropEnableNrbfSerializationSwitchName, ref s_clipboardDragDropEnableNrbfSerialization);
+        get => GetCachedSwitchValue(ClipboardDragDropEnableNrbfSerializationSwitchName, ref s_clipboardDragDropEnableNrbfSerialization);
     }
 }

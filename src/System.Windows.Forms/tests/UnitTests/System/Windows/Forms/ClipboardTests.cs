@@ -659,6 +659,8 @@ public class ClipboardTests
         {
             LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
         }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
     }
 
     [WinFormsFact]
@@ -678,6 +680,8 @@ public class ClipboardTests
         {
             LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
         }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
     }
 
     [WinFormsFact]
