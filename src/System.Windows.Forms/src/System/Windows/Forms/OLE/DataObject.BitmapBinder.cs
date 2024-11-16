@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
+using System.Private.Windows.Core.BinaryFormat;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.Serialization;
 
 namespace System.Windows.Forms;
@@ -19,7 +21,7 @@ public partial class DataObject
     ///   While there are more types allowed (such as <see cref="List{String}"/>, they are all safe.
     ///  </para>
     /// </remarks>
-    private sealed class BitmapBinder : SerializationBinder
+    private sealed class BitmapBinder : SerializationBinder, ITypeResolver
     {
         // Bitmap type lives in different assemblies in the .NET Framework and in .NET Core. To support serialization
         // between both runtimes the .NET Framework identities are used.
@@ -55,7 +57,7 @@ public partial class DataObject
 
         public override void BindToName(Type serializedType, out string? assemblyName, out string? typeName)
         {
-            // Null values will follow the default codepath in BinaryFormatter.
+            // Null values will follow the default code path in BinaryFormatter.
             assemblyName = null;
             typeName = null;
 
@@ -64,6 +66,24 @@ public partial class DataObject
             {
                 throw new SerializationException(string.Format(SR.UnexpectedTypeForClipboardFormat, serializedType.FullName));
             }
+        }
+
+        // This implementation of ITypeResolver works only with types available at the build time.
+#pragma warning disable IL2046 // 'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.
+        public Type GetType(TypeName typeName)
+#pragma warning restore IL2046
+        {
+            if (AllowedTypeName.Equals(typeName.Name, StringComparison.Ordinal)
+                && typeName.AssemblyName is AssemblyNameInfo info)
+            {
+                if (AllowedAssemblyName.Equals(info.Name, StringComparison.Ordinal)
+                    && AllowedToken.SequenceEqual(info.PublicKeyOrToken.AsSpan()))
+                {
+                    return typeof(Bitmap);
+                }
+            }
+
+            throw new SerializationException(string.Format("Could not find type {0}", typeName.AssemblyQualifiedName));
         }
     }
 }

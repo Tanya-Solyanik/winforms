@@ -5,6 +5,7 @@
     <TargetFramework>$(TargetFramework)-windows7.0</TargetFramework>
     <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
     <AssemblyName>System.Windows.Forms.Tests</AssemblyName>
+    <RootNamespace />
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
@@ -25,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildAssist\BuildAssist.msbuildproj" />
+    <ProjectReference Include="..\..\..\System.Windows.Forms.Primitives\tests\TestUtilities\System.Windows.Forms.Primitives.TestUtilities.csproj" />
     <ProjectReference Include="..\..\src\System.Windows.Forms.csproj" />
     <ProjectReference Include="..\..\..\System.Design\src\System.Design.Facade.csproj" />
     <ProjectReference Include="..\..\..\System.Drawing\src\System.Drawing.Facade.csproj" />

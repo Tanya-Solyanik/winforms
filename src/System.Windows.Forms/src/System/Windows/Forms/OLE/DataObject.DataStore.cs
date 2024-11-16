@@ -3,13 +3,14 @@
 
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.Serialization;
 
 namespace System.Windows.Forms;
 
 public partial class DataObject
 {
-    private class DataStore : IDataObject
+    private sealed class DataStore : IDataObject, ITypedDataObject
     {
         private class DataStoreEntry
         {
@@ -23,61 +24,64 @@ public partial class DataObject
             }
         }
 
-        private readonly Dictionary<string, DataStoreEntry> _data = new(BackCompatibleStringComparer.Default);
+        private readonly Dictionary<string, DataStoreEntry> _mappedData = new(BackCompatibleStringComparer.Default);
 
         public DataStore()
         {
         }
 
-        public virtual object? GetData(string format, bool autoConvert)
+        private bool TryGetDataInternal<T>(
+            string format,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
         {
+            data = default;
             if (string.IsNullOrWhiteSpace(format))
             {
-                return null;
+                return false;
             }
 
-            object? baseVar = null;
-            if (_data.TryGetValue(format, out DataStoreEntry? dse))
+            if (_mappedData.TryGetValue(format, out DataStoreEntry? dse) && dse.Data is T t)
             {
-                baseVar = dse.Data;
+                data = t;
+                return true;
             }
 
-            object? original = baseVar;
-
-            if (autoConvert
-                && (dse is null || dse.AutoConvert)
-                && (baseVar is null || baseVar is MemoryStream))
+            if (!autoConvert
+                || !(dse is null || dse.AutoConvert)
+                || GetMappedFormats(format) is not { } mappedFormats)
             {
-                string[]? mappedFormats = GetMappedFormats(format);
-                if (mappedFormats is not null)
+                return false;
+            }
+
+            for (int i = 0; i < mappedFormats.Length; i++)
+            {
+                if (format.Equals(mappedFormats[i]))
                 {
-                    for (int i = 0; i < mappedFormats.Length; i++)
-                    {
-                        if (!format.Equals(mappedFormats[i]))
-                        {
-                            if (_data.TryGetValue(mappedFormats[i], out DataStoreEntry? found))
-                            {
-                                baseVar = found.Data;
-                            }
+                    continue;
+                }
 
-                            if (baseVar is not null and not MemoryStream)
-                            {
-                                original = null;
-                                break;
-                            }
-                        }
-                    }
+                if (_mappedData.TryGetValue(mappedFormats[i], out DataStoreEntry? found) && found.Data is T value)
+                {
+                    data = value;
+                    return true;
                 }
             }
 
-            return original ?? baseVar;
+            return false;
         }
 
-        public virtual object? GetData(string format) => GetData(format, autoConvert: true);
+        public object? GetData(string format, bool autoConvert)
+        {
+            TryGetDataInternal(format, autoConvert, out object? data);
+            return data;
+        }
 
-        public virtual object? GetData(Type format) => GetData(format.FullName!);
+        public object? GetData(string format) => GetData(format, autoConvert: true);
 
-        public virtual void SetData(string format, bool autoConvert, object? data)
+        public object? GetData(Type format) => GetData(format.FullName!);
+
+        public void SetData(string format, bool autoConvert, object? data)
         {
             if (string.IsNullOrWhiteSpace(format))
             {
@@ -100,23 +104,23 @@ public partial class DataObject
                 }
             }
 
-            _data[format] = new DataStoreEntry(data, autoConvert);
+            _mappedData[format] = new DataStoreEntry(data, autoConvert);
         }
 
-        public virtual void SetData(string format, object? data) => SetData(format, autoConvert: true, data);
+        public void SetData(string format, object? data) => SetData(format, autoConvert: true, data);
 
-        public virtual void SetData(Type format, object? data)
+        public void SetData(Type format, object? data)
         {
             ArgumentNullException.ThrowIfNull(format);
             SetData(format.FullName!, data);
         }
 
-        public virtual void SetData(object? data)
+        public void SetData(object? data)
         {
             ArgumentNullException.ThrowIfNull(data);
 
             if (data is ISerializable
-                && !_data.ContainsKey(DataFormats.Serializable))
+                && !_mappedData.ContainsKey(DataFormats.Serializable))
             {
                 SetData(DataFormats.Serializable, data);
             }
@@ -124,12 +128,12 @@ public partial class DataObject
             SetData(data.GetType(), data);
         }
 
-        public virtual bool GetDataPresent(Type format)
+        public bool GetDataPresent(Type format)
         {
             return GetDataPresent(format.FullName!);
         }
 
-        public virtual bool GetDataPresent(string format, bool autoConvert)
+        public bool GetDataPresent(string format, bool autoConvert)
         {
             if (string.IsNullOrWhiteSpace(format))
             {
@@ -138,8 +142,8 @@ public partial class DataObject
 
             if (!autoConvert)
             {
-                Debug.Assert(_data is not null, "data must be non-null");
-                return _data.ContainsKey(format);
+                Debug.Assert(_mappedData is not null, "data must be non-null");
+                return _mappedData.ContainsKey(format);
             }
             else
             {
@@ -159,15 +163,15 @@ public partial class DataObject
             }
         }
 
-        public virtual bool GetDataPresent(string format) => GetDataPresent(format, autoConvert: true);
+        public bool GetDataPresent(string format) => GetDataPresent(format, autoConvert: true);
 
-        public virtual string[] GetFormats(bool autoConvert)
+        public string[] GetFormats(bool autoConvert)
         {
-            Debug.Assert(_data is not null, "data collection can't be null");
-            Debug.Assert(_data.Keys is not null, "data Keys collection can't be null");
+            Debug.Assert(_mappedData is not null, "data collection can't be null");
+            Debug.Assert(_mappedData.Keys is not null, "data Keys collection can't be null");
 
-            string[] baseVar = new string[_data.Keys.Count];
-            _data.Keys.CopyTo(baseVar, 0);
+            string[] baseVar = new string[_mappedData.Keys.Count];
+            _mappedData.Keys.CopyTo(baseVar, 0);
             Debug.Assert(baseVar is not null, "Collections should never return NULL arrays!!!");
 
             if (autoConvert)
@@ -177,8 +181,8 @@ public partial class DataObject
                 HashSet<string> distinctFormats = new(baseVarLength);
                 for (int i = 0; i < baseVarLength; i++)
                 {
-                    Debug.Assert(_data[baseVar[i]] is not null, $"Null item in data collection with key '{baseVar[i]}'");
-                    if (_data[baseVar[i]]!.AutoConvert)
+                    Debug.Assert(_mappedData[baseVar[i]] is not null, $"Null item in data collection with key '{baseVar[i]}'");
+                    if (_mappedData[baseVar[i]]!.AutoConvert)
                     {
                         string[] cur = GetMappedFormats(baseVar[i])!;
                         Debug.Assert(cur is not null, $"GetMappedFormats returned null for '{baseVar[i]}'");
@@ -199,6 +203,28 @@ public partial class DataObject
             return baseVar;
         }
 
-        public virtual string[] GetFormats() => GetFormats(autoConvert: true);
+        public string[] GetFormats() => GetFormats(autoConvert: true);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            Func<TypeName, Type> resolver,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(format, autoConvert, out data);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(format, autoConvert, out data);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(format, autoConvert: false, out data);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(typeof(T).FullName!, autoConvert: false, out data);
     }
 }

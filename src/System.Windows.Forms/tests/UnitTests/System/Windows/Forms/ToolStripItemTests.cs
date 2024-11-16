@@ -8,6 +8,7 @@ using Moq;
 using System.Windows.Forms.TestUtilities;
 using IComDataObject = System.Runtime.InteropServices.ComTypes.IDataObject;
 using Size = System.Drawing.Size;
+using System.Reflection.Metadata;
 
 namespace System.Windows.Forms.Tests;
 

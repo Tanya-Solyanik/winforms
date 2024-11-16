@@ -8,7 +8,9 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Windows.Forms.Primitives;
 using Windows.Win32.System.Ole;
+using static System.Windows.Forms.Tests.BinaryFormatUtilitiesTests;
 using Com = Windows.Win32.System.Com;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
@@ -20,6 +22,8 @@ namespace System.Windows.Forms.Tests;
 [UISettings(MaxAttempts = 3)] // Try up to 3 times before failing.
 public class ClipboardTests
 {
+#pragma warning disable WFDEV005 // Type or member is obsolete
+
     [WinFormsFact]
     public void Clipboard_SetText_InvokeString_GetReturnsExpected()
     {
@@ -424,7 +428,8 @@ public class ClipboardTests
         using Bitmap bitmap = new(10, 10);
         bitmap.SetPixel(1, 2, Color.FromArgb(0x01, 0x02, 0x03, 0x04));
         Clipboard.SetImage(bitmap);
-        Bitmap result = Assert.IsType<Bitmap>(Clipboard.GetImage());
+
+        var result = Clipboard.GetImage().Should().BeOfType<Bitmap>().Subject;
         result.Size.Should().Be(bitmap.Size);
         result.GetPixel(1, 2).Should().Be(Color.FromArgb(0xFF, 0xD2, 0xD2, 0xD2));
         Clipboard.ContainsImage().Should().BeTrue();
@@ -435,12 +440,14 @@ public class ClipboardTests
     {
         try
         {
-        using Metafile metafile = new("bitmaps/telescope_01.wmf");
-        Clipboard.SetImage(metafile);
+            using Metafile metafile = new("bitmaps/telescope_01.wmf");
+            using BinaryFormatterScope scope = new(enable: true);
+            // SetImage fails silently and corrupts the clipboard state for anything other than a bitmap.
+            Clipboard.SetImage(metafile);
 
-        Clipboard.GetImage().Should().BeNull();
-        Clipboard.ContainsImage().Should().BeTrue();
-    }
+            Clipboard.GetImage().Should().BeNull();
+            Clipboard.ContainsImage().Should().BeTrue();
+        }
         finally
         {
             Clipboard.Clear();
@@ -452,12 +459,13 @@ public class ClipboardTests
     {
         try
         {
-        using Metafile metafile = new("bitmaps/milkmateya01.emf");
-        Clipboard.SetImage(metafile);
+            using Metafile metafile = new("bitmaps/milkmateya01.emf");
+            // SetImage fails silently and corrupts the clipboard for everything other than a bitmap.
+            Clipboard.SetImage(metafile);
 
-        Clipboard.GetImage().Should().BeNull();
-        Clipboard.ContainsImage().Should().BeTrue();
-    }
+            Clipboard.GetImage().Should().BeNull();
+            Clipboard.ContainsImage().Should().BeTrue();
+        }
         finally
         {
             Clipboard.Clear();
@@ -633,5 +641,124 @@ public class ClipboardTests
 
         DataObject dataObject = Clipboard.GetDataObject().Should().BeOfType<DataObject>().Which;
         dataObject.GetData(DataFormats.Text).Should().Be(testString);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_BinaryFormatter_AppContextSwitch()
+    {
+        // Test the switch to ensure it works as expected in the context of this test assembly.
+        LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
+
+        using (BinaryFormatterInClipboardDragDropScope scope = new(enable: true))
+        {
+            LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeTrue();
+        }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
+
+        using (BinaryFormatterInClipboardDragDropScope scope = new(enable: false))
+        {
+            LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
+        }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableUnsafeBinaryFormatterSerialization.Should().BeFalse();
+    }
+
+    [WinFormsFact]
+    public void Clipboard_NrbfSerializer_AppContextSwitch()
+    {
+        // Test the switch to ensure it works as expected in the context of this test assembly.
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
+
+        using (NrbfSerializerInClipboardDragDropScope scope = new(enable: false))
+        {
+            LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeFalse();
+        }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
+
+        using (NrbfSerializerInClipboardDragDropScope scope = new(enable: true))
+        {
+            LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
+        }
+
+        LocalAppContextSwitches.ClipboardDragDropEnableNrbfSerialization.Should().BeTrue();
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetInt_ReturnsExpected()
+    {
+        int expected = 101;
+        using (BinaryFormatterScope scope = new(enable: true))
+        {
+            Clipboard.SetData("TestData", expected);
+        }
+
+        Clipboard.TryGetData("TestData", out int? data).Should().BeTrue();
+        data.Should().Be(expected);
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetTestData_ReturnsExpected()
+    {
+        DateTime date = DateTime.Now;
+        TestData expected = new(date);
+        using FullCompatScope scope = new();
+        Clipboard.SetData("TestData", expected);
+
+        Clipboard.TryGetData("TestData", out TestData? data).Should().BeTrue();
+        var result = data.Should().BeOfType<TestData>().Subject;
+        expected.Equals(result);
+
+        // We are still in he less safe switch configuration, but now we prefer the
+        // NRBF deserialization one the BinaryFormatter full compat mode.
+        using NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: true);
+        Clipboard.TryGetData("TestData", out TestData? testData).Should().BeTrue();
+        expected.Equals(testData.Should().BeOfType<TestData>().Subject);
+    }
+
+    [Serializable]
+    private class TestData
+    {
+        public TestData(DateTime dateTime)
+        {
+            _count = 2;
+            _dateTime = dateTime;
+        }
+
+        private readonly int _count;
+        private readonly DateTime _dateTime;
+
+        public void Equals(TestData actual)
+        {
+            _count.Should().Be(actual._count);
+            _dateTime.Should().Be(actual._dateTime);
+        }
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetObject_Throws()
+    {
+        object expected = new();
+        using BinaryFormatterScope scope = new(enable: true);
+        Clipboard.SetData("TestData", expected);
+
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+
+        using NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: true);
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+    }
+
+    [WinFormsFact]
+    public void Clipboard_TryGetRectangleAsObject_Throws()
+    {
+        Rectangle expected = new(1, 1, 2, 2);
+        using BinaryFormatterScope scope = new(enable: true);
+        Clipboard.SetData("TestData", expected);
+
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
+
+        using NrbfSerializerInClipboardDragDropScope nrbfScope = new(enable: true);
+        ((Action)(() => Clipboard.TryGetData("TestData", null!, out object? data))).Should().Throw<NotSupportedException>();
     }
 }

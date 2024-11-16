@@ -3,6 +3,7 @@
 
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using Com = Windows.Win32.System.Com;
@@ -16,6 +17,7 @@ namespace System.Windows.Forms;
 [ClassInterface(ClassInterfaceType.None)]
 public unsafe partial class DataObject :
     IDataObject,
+    ITypedDataObject,
     Com.IDataObject.Interface,
     ComTypes.IDataObject,
     Com.IManagedWrapper<Com.IDataObject>
@@ -25,6 +27,10 @@ public unsafe partial class DataObject :
     private const string BitmapFullName = "System.Drawing.Bitmap";
 
     private readonly Composition _innerData;
+
+    internal static Type NotSupportedResolver(TypeName typeName) =>
+       throw new NotSupportedException($"Using BinaryFormatter is not supported in WinForms Clipboard data deserialization." +
+           $"  Can't resolve {typeName.AssemblyQualifiedName}.");
 
     /// <summary>
     ///  Initializes a new instance of the <see cref="DataObject"/> class, with the raw <see cref="Com.IDataObject"/>
@@ -43,6 +49,15 @@ public unsafe partial class DataObject :
     /// <summary>
     ///  Initializes a new instance of the <see cref="DataObject"/> class, containing the specified data.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   If <paramref name="data"/> implements an <see cref="IDataObject"/> interface,
+    ///   we strongly recommend implementing <see cref="ITypedDataObject"/> to support the
+    ///   `TryGetData` API family that restricts deserialization to the requested and known types.
+    ///   <see cref="Clipboard.TryGetData{T}(string, out T)"/> will throw <see cref="NotSupportedException"/>
+    ///   if <see cref="ITypedDataObject"/> is not implemented.
+    ///  </para>
+    /// </remarks>
     public DataObject(object data)
     {
         if (data is DataObject dataObject)
@@ -92,11 +107,26 @@ public unsafe partial class DataObject :
     internal IDataObject? OriginalIDataObject => _innerData.OriginalIDataObject;
 
     #region IDataObject
+    [Obsolete(
+        Obsoletions.DataObjectGetDataMessage,
+        error: false,
+        DiagnosticId = Obsoletions.ClipboardGetDataDiagnosticId,
+        UrlFormat = Obsoletions.SharedUrlFormat)]
     public virtual object? GetData(string format, bool autoConvert) =>
         ((IDataObject)_innerData).GetData(format, autoConvert);
 
+    [Obsolete(
+        Obsoletions.DataObjectGetDataMessage,
+        error: false,
+        DiagnosticId = Obsoletions.ClipboardGetDataDiagnosticId,
+        UrlFormat = Obsoletions.SharedUrlFormat)]
     public virtual object? GetData(string format) => GetData(format, autoConvert: true);
 
+    [Obsolete(
+        Obsoletions.DataObjectGetDataMessage,
+        error: false,
+        DiagnosticId = Obsoletions.ClipboardGetDataDiagnosticId,
+        UrlFormat = Obsoletions.SharedUrlFormat)]
     public virtual object? GetData(Type format) => format is null ? null : GetData(format.FullName!);
 
     public virtual bool GetDataPresent(string format, bool autoConvert) =>
@@ -120,6 +150,32 @@ public unsafe partial class DataObject :
     public virtual void SetData(object? data) => ((IDataObject)_innerData).SetData(data);
     #endregion
 
+    #region ITypedDataObject
+    [CLSCompliant(false)]
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        Func<TypeName, Type> resolver,
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            // TODO (TanyaSo) argument validation here??
+            TryGetDataCore(format, resolver, autoConvert, out data);
+
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetData(format, NotSupportedResolver, autoConvert, out data);
+
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+        TryGetData(format, autoConvert: false, out data);
+
+    public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            TryGetData(typeof(T).FullName!, out data);
+    #endregion
+
     public virtual bool ContainsAudio() => GetDataPresent(DataFormats.WaveAudioConstant, autoConvert: false);
 
     public virtual bool ContainsFileDropList() => GetDataPresent(DataFormats.FileDropConstant, autoConvert: true);
@@ -135,6 +191,7 @@ public unsafe partial class DataObject :
         return GetDataPresent(ConvertToDataFormats(format), autoConvert: false);
     }
 
+#pragma warning disable WFDEV005 // Type or member is obsolete
     public virtual Stream? GetAudioStream() => GetData(DataFormats.WaveAudio, autoConvert: false) as Stream;
 
     public virtual StringCollection GetFileDropList()
@@ -158,6 +215,7 @@ public unsafe partial class DataObject :
         SourceGenerated.EnumValidator.Validate(format, nameof(format));
         return GetData(ConvertToDataFormats(format), false) is string text ? text : string.Empty;
     }
+#pragma warning restore WFDEV005
 
     public virtual void SetAudio(byte[] audioBytes) => SetAudio(new MemoryStream(audioBytes.OrThrowIfNull()));
 
@@ -183,6 +241,100 @@ public unsafe partial class DataObject :
         SourceGenerated.EnumValidator.Validate(format, nameof(format));
 
         SetData(ConvertToDataFormats(format), false, textData);
+    }
+
+    [CLSCompliant(false)]
+    protected virtual bool TryGetDataCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string format,
+        Func<TypeName, Type> resolver,
+        bool autoConvert,
+        [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+            ((ITypedDataObject)_innerData).TryGetData(format, resolver, autoConvert, out data);
+
+    /// <summary>
+    ///  Verify if the requested format is valid and compatible with the requested type <typeparamref name="T"/>.
+    ///  If a custom <paramref name="resolver"/> is provided, it will be validated at the resolution time.
+    /// </summary>
+    internal static bool ValidateTryGetDataArguments<T>(string format, Func<TypeName, Type>? resolver = default)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            return false;
+        }
+
+        if (IsInvalidPredefinedFormatType(format))
+        {
+            throw new NotSupportedException(
+                $"'{typeof(T).Name}' is not compatible with the specified format `{format}`.");
+        }
+
+        if (resolver is null
+            && !IsRestrictedFormat(format)
+            // Check is a convenience for simple usages where user isn't passing a resolver explicitly.
+            && IsUnboundedType())
+        {
+            // TODO (TanyaSo): localize string
+            throw new NotSupportedException(
+                $"'{typeof(T).Name}' is not a concrete type, and could allow for " +
+                $"unbounded deserialization.  Use a concrete type or define a resolver " +
+                $"function that supports types that you are retrieving from the Clipboard.");
+        }
+
+        return true;
+
+        static bool IsUnboundedType()
+        {
+            if (typeof(T) == typeof(object))
+            {
+                return true;
+            }
+
+            Type type = typeof(T);
+            return type.IsInterface || type.IsAbstract;
+        }
+
+        static bool IsInvalidPredefinedFormatType(string format) => format switch
+        {
+            DataFormats.TextConstant
+                or DataFormats.UnicodeTextConstant
+                or DataFormats.StringConstant
+                or DataFormats.RtfConstant
+                or DataFormats.HtmlConstant
+                or DataFormats.OemTextConstant => typeof(string) != typeof(T),
+
+            DataFormats.FileDropConstant
+                or CF_DEPRECATED_FILENAME
+                or CF_DEPRECATED_FILENAMEW => typeof(string[]) != typeof(T),
+
+            DataFormats.BitmapConstant or BitmapFullName =>
+                typeof(Bitmap) != typeof(T) && typeof(Image) != typeof(T),
+            _ => false
+        };
+
+        static bool IsRestrictedFormat(string format) =>
+            format is DataFormats.StringConstant
+                or BitmapFullName
+                or DataFormats.CsvConstant
+                or DataFormats.DibConstant
+                or DataFormats.DifConstant
+                or DataFormats.LocaleConstant
+                or DataFormats.PenDataConstant
+                or DataFormats.RiffConstant
+                or DataFormats.SymbolicLinkConstant
+                or DataFormats.TiffConstant
+                or DataFormats.WaveAudioConstant
+                or DataFormats.BitmapConstant
+                or DataFormats.EmfConstant
+                or DataFormats.PaletteConstant
+                or DataFormats.WmfConstant
+                or DataFormats.TextConstant
+                or DataFormats.UnicodeTextConstant
+                or DataFormats.RtfConstant
+                or DataFormats.HtmlConstant
+                or DataFormats.OemTextConstant
+                or DataFormats.FileDropConstant
+                or CF_DEPRECATED_FILENAME
+                or CF_DEPRECATED_FILENAMEW;
     }
 
     private static string ConvertToDataFormats(TextDataFormat format) => format switch

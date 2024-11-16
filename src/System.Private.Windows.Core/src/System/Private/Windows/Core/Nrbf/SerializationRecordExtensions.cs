@@ -5,6 +5,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.Drawing;
 using System.Formats.Nrbf;
+using System.Private.Windows.Core.BinaryFormat;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
@@ -39,6 +40,50 @@ internal static class SerializationRecordExtensions
         {
             throw ExceptionDispatchInfo.Capture(ex.InnerException!).SourceException.ConvertToSerializationException();
         }
+    }
+
+    internal static SerializationRecord Decode(this Stream stream, out IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap)
+    {
+        try
+        {
+            return NrbfDecoder.Decode(stream, out recordMap, leaveOpen: true);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidCastException or ArithmeticException or IOException)
+        {
+            // Make the exception easier to catch, but retain the original stack trace.
+            // TODO(TanyaSo) is this really converted to NotSupported up the stack??
+            throw ex.ConvertToSerializationException();
+        }
+        catch (TargetInvocationException ex)
+        {
+            throw ExceptionDispatchInfo.Capture(ex.InnerException!).SourceException.ConvertToSerializationException();
+        }
+    }
+
+    /// <summary>
+    ///  Deserializes the <see cref="SerializationRecord"/> to an object.
+    /// </summary>
+    [RequiresUnreferencedCode("Ultimately calls resolver for type names in the data.")]
+    public static object? Deserialize(
+        this SerializationRecord rootRecord,
+        IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap,
+        ITypeResolver typeResolver)
+    {
+        DeserializationOptions options = new()
+        {
+            TypeResolver = typeResolver
+        };
+
+        try
+        {
+            return Deserializer.Deserialize(rootRecord.Id, recordMap, options);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidCastException or ArithmeticException or IOException or TargetInvocationException or SerializationException)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
+
+        return null;
     }
 
     internal delegate bool TryGetDelegate(SerializationRecord record, [NotNullWhen(true)] out object? value);
