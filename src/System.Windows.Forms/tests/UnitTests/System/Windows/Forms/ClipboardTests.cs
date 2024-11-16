@@ -433,19 +433,35 @@ public class ClipboardTests
     [WinFormsFact]
     public void Clipboard_SetImage_InvokeMetafile_GetReturnsExpected()
     {
+        try
+        {
         using Metafile metafile = new("bitmaps/telescope_01.wmf");
         Clipboard.SetImage(metafile);
+
         Clipboard.GetImage().Should().BeNull();
         Clipboard.ContainsImage().Should().BeTrue();
+    }
+        finally
+        {
+            Clipboard.Clear();
+        }
     }
 
     [WinFormsFact]
     public void Clipboard_SetImage_InvokeEnhancedMetafile_GetReturnsExpected()
     {
+        try
+        {
         using Metafile metafile = new("bitmaps/milkmateya01.emf");
         Clipboard.SetImage(metafile);
+
         Clipboard.GetImage().Should().BeNull();
         Clipboard.ContainsImage().Should().BeTrue();
+    }
+        finally
+        {
+            Clipboard.Clear();
+        }
     }
 
     [WinFormsFact]
