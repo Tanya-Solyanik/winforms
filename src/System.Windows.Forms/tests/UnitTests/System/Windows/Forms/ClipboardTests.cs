@@ -723,7 +723,7 @@ public class ClipboardTests
     {
         TestData expected = new(DateTime.Now);
         string format = "TestData";
-        using FullCompatScope scope = new();
+        using BinaryFormatterFullCompatScope scope = new();
         Clipboard.SetData(format, expected);
 
         Clipboard.TryGetData(format, TestData.TestDataResolver, out TestData? data).Should().BeTrue();
@@ -855,7 +855,7 @@ public class ClipboardTests
         value.SetValue(202u, 2, 3);
         value.SetValue(203u, 2, 4);
 
-        using FullCompatScope scope = new();
+        using BinaryFormatterFullCompatScope scope = new();
         Clipboard.SetData("test", value);
 
         var result = Clipboard.GetData("test").Should().BeOfType<uint[,]>().Subject;
