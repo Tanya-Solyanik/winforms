@@ -16,7 +16,7 @@ public static class DataObjectExtensions
         {
             // TODO (TanyaSo) : localize string
             throw new NotSupportedException(string.Format(
-                "Data object({0}) should implement 'ITypedDataObject' interface to support 'TryGetData<T> methods.",
+                SR.ITypeDataObject_Not_Implemented,
                 dataObject.GetType().FullName));
         }
 
