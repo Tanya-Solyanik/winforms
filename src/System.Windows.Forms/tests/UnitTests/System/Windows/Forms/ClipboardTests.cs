@@ -1105,14 +1105,20 @@ public class ClipboardTests
             // Pasting in different process has been simulated. Manual Json deserialization will need to occur.
             IDataObject received = Clipboard.GetDataObject().Should().BeAssignableTo<IDataObject>().Subject;
             received.Should().NotBe(jsonDataObject);
+            received.Should().BeAssignableTo<ITypedDataObject>();
             byte[] jsonBytes = Clipboard.GetData(format).Should().BeOfType<byte[]>().Subject;
             JsonSerializer.Deserialize(jsonBytes, typeof(SimpleTestData)).Should().BeEquivalentTo(data);
+            received.TryGetData(format, out byte[]? jsonBytes1).Should().BeTrue();
+            jsonBytes1.Should().BeEquivalentTo(jsonBytes);
         }
         else
         {
             JsonDataObject received = Clipboard.GetDataObject().Should().BeOfType<JsonDataObject>().Subject;
             received.Should().Be(jsonDataObject);
             received.Deserialize<SimpleTestData>(format).Should().BeEquivalentTo(data);
+            Action tryGetData = () => received.TryGetData(format, out byte[]? _);
+            // TanyaSo
+            tryGetData.Should().Throw<NotSupportedException>();
         }
     }
 

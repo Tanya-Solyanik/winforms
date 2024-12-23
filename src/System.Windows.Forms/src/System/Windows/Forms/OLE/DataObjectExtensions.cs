@@ -16,7 +16,7 @@ public static class DataObjectExtensions
         {
             throw new NotSupportedException(string.Format(
                 SR.ITypeDataObject_Not_Implemented,
-                dataObject.GetType().FullName));
+                dataObject.GetType().AssemblyQualifiedName));
         }
 
         return typed;
