@@ -86,13 +86,26 @@ public unsafe partial class DataObject :
 
     /// <summary>
     ///  Returns the inner data that the <see cref="DataObject"/> was created with if the original data implemented
-    ///  <see cref="IDataObject"/>. Otherwise, returns this.
-    ///  This method should only be used if the <see cref="DataObject"/> was created for clipboard purposes.
+    ///  <see cref="ITypedDataObject"/>, if the original data implemented only <see cref="IDataObject"/>,
+    ///  we'll wrap it in a default implementation of <see cref="ITypedDataObject"/>. Otherwise, returns this.
+    ///  This method should only be used if the <see cref="DataObject"/> was created for clipboard purposes,
+    ///  if we are calling this method, it means that we are the consumer component that lives in the same
+    ///  process as the writer and the writer had not flushed the clipboard content.
     /// </summary>
     internal IDataObject TryUnwrapInnerIDataObject()
     {
         Debug.Assert(!IsOriginalNotIDataObject, "This method should only be used for clipboard purposes.");
-        return _innerData.OriginalIDataObject is { } original ? original : this;
+        if (_innerData.OriginalIDataObject is ITypedDataObject typed)
+        {
+            return typed;
+        }
+
+        if (_innerData.OriginalIDataObject is IDataObject original)
+        {
+            return new TypedDataObject(original);
+        }
+
+        return this;
     }
 
     /// <inheritdoc cref="Composition.OriginalIDataObject"/>
