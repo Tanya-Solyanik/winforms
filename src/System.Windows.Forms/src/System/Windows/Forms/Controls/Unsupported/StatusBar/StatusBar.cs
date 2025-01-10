@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace System.Windows.Forms;
@@ -12,7 +11,7 @@ namespace System.Windows.Forms;
 [Obsolete(
     Obsoletions.StatusBarMessage,
     error: false,
-    DiagnosticId = Obsoletions.StatusBarDiagnosticId,
+    DiagnosticId = Obsoletions.UnsupportedControlsDiagnosticId,
     UrlFormat = Obsoletions.SharedUrlFormat)]
 [EditorBrowsable(EditorBrowsableState.Never)]
 [Browsable(false)]
@@ -25,123 +24,38 @@ public partial class StatusBar : Control
 {
     public StatusBar() => throw new PlatformNotSupportedException();
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override Color BackColor
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+    [Localizable(true)]
+    [MergableProperty(false)]
+    public StatusBarPanelCollection Panels => throw null;
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler BackColorChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override Image BackgroundImage
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler BackgroundImageChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override ImageLayout BackgroundImageLayout
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler BackgroundImageLayoutChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override Color ForeColor
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler ForeColorChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    protected override bool DoubleBuffered
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new ImeMode ImeMode
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler ImeModeChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    public StatusBarPanelCollection Panels => throw new PlatformNotSupportedException();
-
+    [DefaultValue(false)]
     public bool ShowPanels
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
+    [DefaultValue(true)]
     public bool SizingGrip
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    public new bool TabStop
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
     public event StatusBarDrawItemEventHandler DrawItem
     {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
+        add { }
+        remove { }
     }
 
     public event StatusBarPanelClickEventHandler PanelClick
     {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
+        add { }
+        remove { }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event PaintEventHandler Paint
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
+    protected virtual void OnPanelClick(StatusBarPanelClickEventArgs e) { }
 
-    protected virtual void OnPanelClick(StatusBarPanelClickEventArgs e) => throw new PlatformNotSupportedException();
-
-    protected virtual void OnDrawItem(StatusBarDrawItemEventArgs sbdievent) => throw new PlatformNotSupportedException();
+    protected virtual void OnDrawItem(StatusBarDrawItemEventArgs sbdievent) { }
 }

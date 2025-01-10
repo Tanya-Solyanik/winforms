@@ -12,7 +12,7 @@ namespace System.Windows.Forms;
 [Obsolete(
     Obsoletions.ToolBarMessage,
     error: false,
-    DiagnosticId = Obsoletions.ToolBarDiagnosticId,
+    DiagnosticId = Obsoletions.UnsupportedControlsDiagnosticId,
     UrlFormat = Obsoletions.SharedUrlFormat)]
 [EditorBrowsable(EditorBrowsableState.Never)]
 [Browsable(false)]
@@ -23,205 +23,100 @@ namespace System.Windows.Forms;
 [DefaultProperty(nameof(Buttons))]
 public partial class ToolBar : Control
 {
+    // Suppress creation of a default constructor by the compiler. This class should not be "constructable".
     public ToolBar() => throw new PlatformNotSupportedException();
 
+    [DefaultValue(ToolBarAppearance.Normal)]
+    [Localizable(true)]
     public ToolBarAppearance Appearance
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler AutoSizeChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override Color BackColor
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler BackColorChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override Image BackgroundImage
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler BackgroundImageChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override ImageLayout BackgroundImageLayout
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler BackgroundImageLayoutChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
+    [DefaultValue(BorderStyle.None)]
+    [Runtime.InteropServices.DispId(-504)]
     public BorderStyle BorderStyle
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
-    public ToolBarButtonCollection Buttons => throw new PlatformNotSupportedException();
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+    [Localizable(true)]
+    [MergableProperty(false)]
+    public ToolBarButtonCollection Buttons => throw null;
 
+    [RefreshProperties(RefreshProperties.All)]
+    [Localizable(true)]
     public Size ButtonSize
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
+    [DefaultValue(true)]
     public bool Divider
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    protected override bool DoubleBuffered
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
+    [DefaultValue(false)]
+    [Localizable(true)]
     public bool DropDownArrows
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override Color ForeColor
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler ForeColorChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
+    [DefaultValue(null)]
     public ImageList ImageList
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public Size ImageSize => throw new PlatformNotSupportedException();
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Size ImageSize => throw null;
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new ImeMode ImeMode
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler ImeModeChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override RightToLeft RightToLeft
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler RightToLeftChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
+    [DefaultValue(false)]
+    [Localizable(true)]
     public bool ShowToolTips
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
-    public new bool TabStop
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public override string Text
-    {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
-    }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event EventHandler TextChanged
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
-
+    [DefaultValue(ToolBarTextAlign.Underneath)]
+    [Localizable(true)]
     public ToolBarTextAlign TextAlign
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
+    [DefaultValue(true)]
+    [Localizable(true)]
     public bool Wrappable
     {
-        get => throw new PlatformNotSupportedException();
-        set => throw new PlatformNotSupportedException();
+        get => throw null;
+        set { }
     }
 
     public event ToolBarButtonClickEventHandler ButtonClick
     {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
+        add { }
+        remove { }
     }
 
     public event ToolBarButtonClickEventHandler ButtonDropDown
     {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
+        add { }
+        remove { }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public new event PaintEventHandler Paint
-    {
-        add => throw new PlatformNotSupportedException();
-        remove => throw new PlatformNotSupportedException();
-    }
+    protected virtual void OnButtonClick(ToolBarButtonClickEventArgs e) { }
 
-    protected virtual void OnButtonClick(ToolBarButtonClickEventArgs e) => throw new PlatformNotSupportedException();
-
-    protected virtual void OnButtonDropDown(ToolBarButtonClickEventArgs e) => throw new PlatformNotSupportedException();
+    protected virtual void OnButtonDropDown(ToolBarButtonClickEventArgs e) { }
 }
