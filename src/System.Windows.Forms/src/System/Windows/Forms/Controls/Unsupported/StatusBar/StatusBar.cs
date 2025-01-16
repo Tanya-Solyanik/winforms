@@ -20,6 +20,9 @@ namespace System.Windows.Forms;
 [DefaultEvent(nameof(PanelClick))]
 [DefaultProperty(nameof(Text))]
 [Designer($"System.Windows.Forms.Design.StatusBarDesigner, {AssemblyRef.SystemDesign}")]
+/// <summary>
+///  This type is provided for binary compatibility with the .NET Framework. You should not use it.
+/// </summary>
 public partial class StatusBar : Control
 {
     public StatusBar() => throw new PlatformNotSupportedException();
