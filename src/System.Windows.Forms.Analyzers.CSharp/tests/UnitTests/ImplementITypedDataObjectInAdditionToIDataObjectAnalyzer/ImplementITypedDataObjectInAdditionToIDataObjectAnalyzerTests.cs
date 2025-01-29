@@ -120,12 +120,31 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
 
     private static CSharpAnalyzerTest<ImplementITypedDataObjectInAdditionToIDataObjectAnalyzer, DefaultVerifier> CreateContext(string input)
     {
-        ReferenceAssemblies netCore = new ReferenceAssemblies(
+        // ReferenceAssemblies netCore = new ReferenceAssemblies(
+        //    "net10.0",
+        //    new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0-alpha.1.25073.13"),
+        //    Path.Combine("ref", "net10.0"));
+        // ReferenceAssemblies referenceAssemblies = netCore
+        //    .AddPackages([new PackageIdentity("Microsoft.WindowsDesktop.App.Ref", "10.0.0-alpha.1.25066.2")]);
+
+        // Specify the absolute paths to the reference assemblies
+        string netCoreAppRefPath = @"Q:\winforms\.dotnet\packs\Microsoft.NETCore.App.Ref\10.0.0-alpha.1.25073.13\ref\net10.0";
+        string windowsDesktopAppRefPath = @"Q:\winforms\.dotnet\packs\Microsoft.WindowsDesktop.App.Ref\10.0.0-alpha.1.25073.1\ref\net10.0\System.Windows.Forms.dll";
+
+        // Create ReferenceAssemblies from the specified paths
+        ReferenceAssemblies referenceAssemblies = new ReferenceAssemblies(
             "net10.0",
             new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0-alpha.1.25073.13"),
-            Path.Combine("ref", "net10.0"));
-        ReferenceAssemblies referenceAssemblies = netCore
-            .AddPackages([new PackageIdentity("Microsoft.WindowsDesktop.App.Ref", "10.0.0-alpha.1.25066.2")]);
+            netCoreAppRefPath);
+
+        // ReferenceAssemblies desktopReferences = new ReferenceAssemblies(
+        //    "net10.0",
+        //    new PackageIdentity("Microsoft.WindowsDesktop.App.Ref", "10.0.0-alpha.1.25073.1"),
+        //    windowsDesktopAppRefPath);
+
+        // Add additional packages if needed
+        // referenceAssemblies = referenceAssemblies.AddPackages(
+        //    [new PackageIdentity("Microsoft.WindowsDesktop.App.Ref", "10.0.0-alpha.1.25073.1")]);
 
         CSharpAnalyzerTest<ImplementITypedDataObjectInAdditionToIDataObjectAnalyzer, DefaultVerifier> context = new()
         {
@@ -133,12 +152,76 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
             TestState =
             {
                 OutputKind = OutputKind.DynamicallyLinkedLibrary,
+                AdditionalReferences = { windowsDesktopAppRefPath}
             },
             ReferenceAssemblies = referenceAssemblies
         };
 
         return context;
     }
+
+#if false
+    static bool TryGetSdkVersion(
+     string rootFolderPath,
+     [NotNullWhen(true)] out string? version)
+    {
+        string globalJsonPath = Path.Combine(rootFolderPath, "global.json");
+        string globalJsonString = File.ReadAllText(globalJsonPath);
+        JsonObject? jsonObject = JsonNode.Parse(globalJsonString)?.AsObject();
+        version = (string?)jsonObject?["sdk"]?["version"];
+
+        return version is not null;
+    }
+
+    static bool CheckVersion(string sdkFolderPath, string version)
+    => Directory.Exists(Path.Combine(sdkFolderPath, "sdk", version));
+
+    static bool TryGetSdkFolderPath(
+            string rootFolderPath,
+            string version,
+            [NotNullWhen(true)] out string? sdkFolderPath,
+            [NotNullWhen(true)] out string? dotNetExePath)
+    {
+        // First, try to use the local .NET SDK if it's there.
+        sdkFolderPath = Path.Combine(rootFolderPath, ".dotnet");
+        dotNetExePath = Path.Combine(sdkFolderPath, "dotnet.exe");
+
+        if (CheckVersion(sdkFolderPath, version) && File.Exists(dotNetExePath))
+        {
+            return true;
+        }
+
+        // Next, see if there's a globally installed .NET SDK.
+        sdkFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet");
+        dotNetExePath = Path.Combine(sdkFolderPath, "dotnet.exe");
+
+        if (CheckVersion(sdkFolderPath, version) && File.Exists(dotNetExePath))
+        {
+            return true;
+        }
+
+        // Finally, see if there's an environment variable set.
+        sdkFolderPath = Environment.GetEnvironmentVariable("DOTNET_INSTALL_DIR");
+        if (string.IsNullOrEmpty(sdkFolderPath))
+        {
+            sdkFolderPath = null;
+            dotNetExePath = null;
+            return false;
+        }
+
+        sdkFolderPath = Path.Combine(sdkFolderPath, "dotnet");
+        dotNetExePath = Path.Combine(sdkFolderPath, "dotnet.exe");
+
+        if (CheckVersion(sdkFolderPath, version) && File.Exists(dotNetExePath))
+        {
+            return true;
+        }
+
+        sdkFolderPath = null;
+        dotNetExePath = null;
+        return false;
+    }
+#endif
 
     private static async Task<string> GetTestCodeAsync(
         [CallerMemberName] string testName = "",
