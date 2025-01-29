@@ -120,31 +120,18 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
 
     private static CSharpAnalyzerTest<ImplementITypedDataObjectInAdditionToIDataObjectAnalyzer, DefaultVerifier> CreateContext(string input)
     {
-        // ReferenceAssemblies netCore = new ReferenceAssemblies(
-        //    "net10.0",
-        //    new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0-alpha.1.25073.13"),
-        //    Path.Combine("ref", "net10.0"));
-        // ReferenceAssemblies referenceAssemblies = netCore
-        //    .AddPackages([new PackageIdentity("Microsoft.WindowsDesktop.App.Ref", "10.0.0-alpha.1.25066.2")]);
+        string currentNetCoreVersion = "10.0.0-alpha.1.25073.13";
+       // string currentDesktopVersion = "10.0.0-alpha.1.25073.1";
 
         // Specify the absolute paths to the reference assemblies
-        string netCoreAppRefPath = @"Q:\winforms\.dotnet\packs\Microsoft.NETCore.App.Ref\10.0.0-alpha.1.25073.13\ref\net10.0";
-        string windowsDesktopAppRefPath = @"Q:\winforms\.dotnet\packs\Microsoft.WindowsDesktop.App.Ref\10.0.0-alpha.1.25073.1\ref\net10.0\System.Windows.Forms.dll";
-
-        // Create ReferenceAssemblies from the specified paths
+        string netCoreAppRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.NETCore.App.Ref\{currentNetCoreVersion}\ref\net10.0";
+       // string winFormsRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.WindowsDesktop.App.Ref\{currentDesktopVersion}\ref\net10.0\System.Windows.Forms.dll";
+        string winFormsRefPath = $@"..\..\..\..\..\artifacts\obj\System.Windows.Forms\Debug\net10.0\ref\System.Windows.Forms.dll";
+        // Create ReferenceAssemblies from the specified path.
         ReferenceAssemblies referenceAssemblies = new ReferenceAssemblies(
             "net10.0",
-            new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0-alpha.1.25073.13"),
+            new PackageIdentity("Microsoft.NETCore.App.Ref", currentNetCoreVersion),
             netCoreAppRefPath);
-
-        // ReferenceAssemblies desktopReferences = new ReferenceAssemblies(
-        //    "net10.0",
-        //    new PackageIdentity("Microsoft.WindowsDesktop.App.Ref", "10.0.0-alpha.1.25073.1"),
-        //    windowsDesktopAppRefPath);
-
-        // Add additional packages if needed
-        // referenceAssemblies = referenceAssemblies.AddPackages(
-        //    [new PackageIdentity("Microsoft.WindowsDesktop.App.Ref", "10.0.0-alpha.1.25073.1")]);
 
         CSharpAnalyzerTest<ImplementITypedDataObjectInAdditionToIDataObjectAnalyzer, DefaultVerifier> context = new()
         {
@@ -152,7 +139,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
             TestState =
             {
                 OutputKind = OutputKind.DynamicallyLinkedLibrary,
-                AdditionalReferences = { windowsDesktopAppRefPath}
+                AdditionalReferences = { winFormsRefPath }
             },
             ReferenceAssemblies = referenceAssemblies
         };
