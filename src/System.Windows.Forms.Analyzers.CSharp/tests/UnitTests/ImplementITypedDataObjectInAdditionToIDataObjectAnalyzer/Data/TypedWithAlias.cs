@@ -1,23 +1,13 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
+using IManagedDataObject = System.Windows.Forms.ITypedDataObject;
+using System.Runtime.Versioning;
 
-namespace ScratchProject;
+[assembly: TargetFramework(".NETCoreApp,Version=v10.0", FrameworkDisplayName = ".NET 10.0")]
 
-// As we can't currently design in VS in the runtime solution, mark as "Default" so this opens in code view by default.
-[DesignerCategory("Default")]
-public partial class Form1 : Form
-{
-    public Form1()
-    {
-        InitializeComponent();
-    }
-}
+namespace System.Windows.Forms.Analyzers.CSharp.Tests;
 
-internal class TwoInterfaces :IDataObject, ITypedDataObject
+internal class TypedWithAlias : IManagedDataObject, System.Windows.Forms.IDataObject
 {
     public object? GetData(string format, bool autoConvert) => null;
     public object? GetData(string format) => null;
@@ -33,7 +23,7 @@ internal class TwoInterfaces :IDataObject, ITypedDataObject
     public void SetData(object? data) { }
 
     public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>([MaybeNullWhen(false), NotNullWhen(true)] out T data) =>
-        throw new NotImplementedException();
+    throw new NotImplementedException();
     public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, [MaybeNullWhen(false), NotNullWhen(true)] out T data) =>
         throw new NotImplementedException();
     public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string format, bool autoConvert, [MaybeNullWhen(false), NotNullWhen(true)] out T data) =>

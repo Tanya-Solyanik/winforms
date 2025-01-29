@@ -164,7 +164,7 @@ internal bool SingleVerticalBorderAdded
 ### Nullability
 
 1. Prefer [pattern matching](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/patterns) to check variable type and null state (e.g. `if (parameter is Form form)`, `if (manager.GetService<IContainer>() is { } container)`, etc.).
-1. Using the postfix `!` [null-forgiving operator](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/null-forgiving) to override null analysis must always get a descriptive comment. Prefer to refactor code to avoid this where possible. If we do not control the code in question prefer to throw `ArgumentException` when an associated argument is known or `InvalidOperationException` otherwise. Do not let code fall into `NullReferenceException`.
+1. Using the postfix `!` [null-forgiving operator](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/null-forgiving) to override null analysis must always get a descriptive comment. Prefer to re-factor code to avoid this where possible. If we do not control the code in question prefer to throw `ArgumentException` when an associated argument is known or `InvalidOperationException` otherwise. Do not let code fall into `NullReferenceException`.
 
 ### Visual Basic
 

@@ -22,6 +22,16 @@
         <target state="translated">Il valore di '{0}' non è valido per l'unità delle dimensioni del carattere.</target>
         <note />
       </trans-unit>
+      <trans-unit id="Missing_ITypedDataObject_AnalyzerDescription">
+        <source>Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</source>
+        <target state="new">Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Missing_ITypedDataObject_AnalyzerTitle">
+        <source>`ITypedDataObject` interface is is not implemented by a custom data object</source>
+        <target state="new">`ITypedDataObject` interface is is not implemented by a custom data object</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TextParseFailedFormat">
         <source>Text "{0}" cannot be parsed. The expected text format is "{1}".</source>
         <target state="translated">Impossibile analizzare Text "{0}". Testo previsto nel formato "{1}".</target>
@@ -65,6 +75,11 @@
       <trans-unit id="WFO1000AnalyzerTitle">
         <source>Missing code serialization configuration for property content</source>
         <target state="translated">Configurazione di serializzazione del codice mancante per il contenuto della proprietà</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WFO1001AnalyzerMessageFormat">
+        <source>Custom data object {0} does not implement `ITypedDataObject` interface</source>
+        <target state="new">Custom data object {0} does not implement `ITypedDataObject` interface</target>
         <note />
       </trans-unit>
       <trans-unit id="WFO2001AnalyzerDescription">

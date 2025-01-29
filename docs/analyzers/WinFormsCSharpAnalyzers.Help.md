@@ -32,7 +32,23 @@ set to `DesignerSerializationVisibility.Content` or `DesignerSerializationVisibi
 
 |Item|Value|
 |-|-|
-| Category | ApplicationConfiguration |
+| Category | WinForms Security |
+| Enabled | True |
+| Severity | Warning |
+| CodeFix | False |
+---
+
+## `ImplementITypedDataObjectInAdditionToIDataObject`
+
+`ImplementITypedDataObjectInAdditionToIDataObject` checks for custom implementations of the managed `IDataObject` interface and suggests to also implement the `ITypedDataObject` interface.
+
+### [WFO1001](https://aka.ms/winforms-warnings/WFO1001): Implement ITypedDataObject interface in addition to IDataObject.
+
+Custom data objects must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.
+
+|Item|Value|
+|-|-|
+| Category | WinForms Security |
 | Enabled | True |
 | Severity | Warning |
 | CodeFix | False |

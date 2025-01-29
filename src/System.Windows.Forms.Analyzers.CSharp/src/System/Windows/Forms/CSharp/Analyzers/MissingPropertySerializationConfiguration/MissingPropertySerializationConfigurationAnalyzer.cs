@@ -3,7 +3,6 @@
 
 using System.Collections.Immutable;
 using System.ComponentModel;
-using System.Windows.Forms.CSharp.Analyzers.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 

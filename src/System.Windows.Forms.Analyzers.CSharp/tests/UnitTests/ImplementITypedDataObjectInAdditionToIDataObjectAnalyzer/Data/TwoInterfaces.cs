@@ -1,21 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-using System.ComponentModel;
+﻿using System.Windows.Forms;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
+using System.Runtime.Versioning;
 
-namespace ScratchProject;
+[assembly: TargetFramework(".NETCoreApp,Version=v10.0", FrameworkDisplayName = ".NET 10.0")]
 
-// As we can't currently design in VS in the runtime solution, mark as "Default" so this opens in code view by default.
-[DesignerCategory("Default")]
-public partial class Form1 : Form
-{
-    public Form1()
-    {
-        InitializeComponent();
-    }
-}
+namespace System.Windows.Forms.Analyzers.CSharp.Tests;
 
 internal class TwoInterfaces :IDataObject, ITypedDataObject
 {
