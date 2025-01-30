@@ -5,7 +5,7 @@ using System.Windows.Forms.Analyzers.CSharp.Resources;
 using System.Windows.Forms.Analyzers.Diagnostics;
 using Microsoft.CodeAnalysis;
 
-namespace System.Windows.Forms.CSharp;
+namespace System.Windows.Forms.CSharp.Analyzers.Diagnostics;
 
 internal static class CSharpDiagnosticDescriptors
 {

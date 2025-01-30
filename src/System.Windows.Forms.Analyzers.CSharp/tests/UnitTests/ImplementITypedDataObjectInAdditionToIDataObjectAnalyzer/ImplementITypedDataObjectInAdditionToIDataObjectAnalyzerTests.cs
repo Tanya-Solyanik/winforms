@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Windows.Forms.Analyzers.Diagnostics;
 using System.Windows.Forms.CSharp.Analyzers.ImplementITypedDataObjectInAdditionToIDataObject;
 using Microsoft.CodeAnalysis;
@@ -119,30 +118,8 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
 
     private static CSharpAnalyzerTest<ImplementITypedDataObjectInAdditionToIDataObjectAnalyzer, DefaultVerifier> CreateContext(string input)
     {
-        string currentNetCoreVersion = CurrentReferences.GetNetCoreRefVersion();
-        // string currentDesktopVersion = "10.0.0-alpha.1.25073.1";
-        string configuration =
-#if DEBUG
-            "Debug";
-#else
-            "Release";
-#endif
-        string dotNetVersion = CurrentReferences.GetDotNetVersion();
-
-        // Specify the absolute paths to the reference assemblies
-        string netCoreAppRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.NETCore.App.Ref\{currentNetCoreVersion}\ref\{dotNetVersion}";
-        // string winFormsRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.WindowsDesktop.App.Ref\{currentDesktopVersion}\ref\{dotNetVersion}\System.Windows.Forms.dll";
-        string winFormsRefPath = $@"..\..\..\..\..\artifacts\obj\System.Windows.Forms\{configuration}\{dotNetVersion}\ref\System.Windows.Forms.dll";
-        if (CurrentReferences.TryGetSdkPath(out string? test))
-        {
-            Debug.WriteLine($"Using SDK version: {test}");
-        }
-
-        // Create ReferenceAssemblies from the specified path.
-        ReferenceAssemblies referenceAssemblies = new ReferenceAssemblies(
-            dotNetVersion,
-            new PackageIdentity("Microsoft.NETCore.App.Ref", currentNetCoreVersion),
-            netCoreAppRefPath);
+        Assert.NotNull(CurrentReferences.ReferenceAssemblies);
+        Assert.NotNull(CurrentReferences.WinFormsRefPath);
 
         CSharpAnalyzerTest<ImplementITypedDataObjectInAdditionToIDataObjectAnalyzer, DefaultVerifier> context = new()
         {
@@ -150,9 +127,9 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
             TestState =
             {
                 OutputKind = OutputKind.DynamicallyLinkedLibrary,
-                AdditionalReferences = { winFormsRefPath }
+                AdditionalReferences = { CurrentReferences.WinFormsRefPath }
             },
-            ReferenceAssemblies = referenceAssemblies
+            ReferenceAssemblies = CurrentReferences.ReferenceAssemblies
         };
 
         return context;

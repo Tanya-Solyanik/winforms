@@ -95,7 +95,6 @@ public sealed class AvoidPassingTaskWithoutCancellationTokenTests
     [MemberData(nameof(GetReferenceAssemblies))]
     public async Task CS_AvoidPassingTaskWithoutCancellationAnalyzer(ReferenceAssemblies referenceAssemblies)
     {
-        // If the API does not exist, we need to add it to the test.
         string diagnosticId = DiagnosticIDs.AvoidPassingFuncReturningTaskWithoutCancellationToken;
 
         var context = new CSharpAnalyzerTest
@@ -114,6 +113,35 @@ public sealed class AvoidPassingTaskWithoutCancellationTokenTests
                     },
                 },
             ReferenceAssemblies = referenceAssemblies
+        };
+
+        await context.RunAsync();
+    }
+
+    [Fact]
+    public async Task CS_AvoidPassingTaskWithoutCancellationAnalyzer_CurrentWinForms()
+    {
+        string diagnosticId = DiagnosticIDs.AvoidPassingFuncReturningTaskWithoutCancellationToken;
+        Assert.NotNull(CurrentReferences.ReferenceAssemblies);
+        Assert.NotNull(CurrentReferences.WinFormsRefPath);
+
+        var context = new CSharpAnalyzerTest
+            <AvoidPassingTaskWithoutCancellationTokenAnalyzer,
+             DefaultVerifier>
+        {
+            TestCode = TestCode,
+            TestState =
+                {
+                    OutputKind = OutputKind.WindowsApplication,
+                    ExpectedDiagnostics =
+                    {
+                        DiagnosticResult.CompilerWarning(diagnosticId).WithSpan(41, 21, 41, 97),
+                        DiagnosticResult.CompilerWarning(diagnosticId).WithSpan(44, 21, 44, 97),
+                        DiagnosticResult.CompilerWarning(diagnosticId).WithSpan(47, 21, 47, 98),
+                    },
+                    AdditionalReferences = { CurrentReferences.WinFormsRefPath }
+                },
+            ReferenceAssemblies = CurrentReferences.ReferenceAssemblies
         };
 
         await context.RunAsync();

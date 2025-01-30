@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.Windows.Forms.CSharp.Analyzers.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -16,8 +17,8 @@ public class AvoidPassingTaskWithoutCancellationTokenAnalyzer : DiagnosticAnalyz
     private const string TaskString = "Task";
     private const string ValueTaskString = "ValueTask";
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        => [CSharpDiagnosticDescriptors.s_avoidPassingFuncReturningTaskWithoutCancellationToken];
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
+        [CSharpDiagnosticDescriptors.s_avoidPassingFuncReturningTaskWithoutCancellationToken];
 
     public override void Initialize(AnalysisContext context)
     {

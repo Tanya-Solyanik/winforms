@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Windows.Forms.Analyzers;
+using System.Windows.Forms.CSharp.Analyzers.Diagnostics;
 
 namespace System.Windows.Forms.CSharp.Analyzers.ImplementITypedDataObjectInAdditionToIDataObject;
 
