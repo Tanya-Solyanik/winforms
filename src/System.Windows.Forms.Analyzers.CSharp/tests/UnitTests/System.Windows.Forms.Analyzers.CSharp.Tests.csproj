@@ -28,15 +28,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Generators\MockData\*.cs" />
-    <None Include="Generators\MockData\*.*">
+    <Compile Remove="Generators\Data\*.cs" />
+    <None Include="Generators\Data\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="**\Data\*.cs" />
-    <Content Include ="**\Data\*.cs">
+    <Content Include="**\Data\*.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
