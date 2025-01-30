@@ -135,4 +135,13 @@
   <data name="WFO2001AnalyzerTitle" xml:space="preserve">
     <value>Task is being passed to InvokeAsync without a cancellation token</value>
   </data>
+  <data name="WFO1001AnalyzerMessageFormat" xml:space="preserve">
+    <value>Custom data object {0} does not implement `ITypedDataObject` interface</value>
+  </data>
+  <data name="WFO1001AnalyzerTitle" xml:space="preserve">
+    <value>`ITypedDataObject` interface is is not implemented by a custom data object</value>
+  </data>
+  <data name="WFO1001AnalyzerDescription" xml:space="preserve">
+    <value>Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</value>
+  </data>
 </root>

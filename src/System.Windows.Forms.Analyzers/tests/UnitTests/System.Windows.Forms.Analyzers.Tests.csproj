@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="System\Windows\Forms\Analyzers\MockData\*.*">
+    <None Update="System\Windows\Forms\Analyzers\Data\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

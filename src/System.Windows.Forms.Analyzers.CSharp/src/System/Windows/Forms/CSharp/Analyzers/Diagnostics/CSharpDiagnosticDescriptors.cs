@@ -50,4 +50,13 @@ internal static class CSharpDiagnosticDescriptors
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: new LocalizableResourceString(nameof(SR.WFO2001AnalyzerDescription), SR.ResourceManager, typeof(SR)));
+
+    public static readonly DiagnosticDescriptor s_implementITypedDataObjectInAdditionToIDataObject =
+        new(id: DiagnosticIDs.ImplementITypedDataObjectInAdditionToIDataObject,
+            title: new LocalizableResourceString(nameof(SR.WFO1001AnalyzerTitle), SR.ResourceManager, typeof(SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.WFO1001AnalyzerMessageFormat), SR.ResourceManager, typeof(SR)),
+            category: DiagnosticCategories.WinFormsSecurity,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true,
+            description: new LocalizableResourceString(nameof(SR.WFO1001AnalyzerDescription), SR.ResourceManager, typeof(SR)));
 }

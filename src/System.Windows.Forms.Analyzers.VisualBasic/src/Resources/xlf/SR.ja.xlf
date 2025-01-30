@@ -17,6 +17,21 @@
         <target state="translated">プロパティ コンテンツのコード シリアル化構成がありません</target>
         <note />
       </trans-unit>
+      <trans-unit id="WFO1001AnalyzerDescription">
+        <source>Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</source>
+        <target state="new">Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WFO1001AnalyzerMessageFormat">
+        <source>Custom data object {0} does not implement `ITypedDataObject` interface</source>
+        <target state="new">Custom data object {0} does not implement `ITypedDataObject` interface</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WFO1001AnalyzerTitle">
+        <source>`ITypedDataObject` interface is is not implemented by a custom data object</source>
+        <target state="new">`ITypedDataObject` interface is is not implemented by a custom data object</target>
+        <note />
+      </trans-unit>
       <trans-unit id="WFO2001AnalyzerDescription">
         <source>Avoid passing a `Func&lt;T&gt;` to `InvokeAsync` where `T` is a `Task` or `ValueTask`, unless your intention is for the delegate to simply be kicked off as an unsupervised task. Instead, use `Func&lt;CancellationToken, ValueTask&gt;` or `Func&lt;CancellationToken, ValueTask&lt;T&gt;&gt;`, so that the delegate passed to `InvokeAsync` can be awaited, allowing exceptions to be properly handled.</source>
         <target state="translated">デリゲートを単に監視なしのタスクとして開始する意図がない限り、`T` が `Task` または `ValueTask` の `Func&lt;T&gt;` を `InvokeAsync` に渡すことは避けてください。代わりに、`Func&lt;CancellationToken, ValueTask&gt;` または `Func&lt;CancellationToken, ValueTask&lt;T&gt;&gt;` を使用して、`InvokeAsync` に渡されるデリゲートを待機できるようにし、例外が適切に処理できるようにしてください。</target>

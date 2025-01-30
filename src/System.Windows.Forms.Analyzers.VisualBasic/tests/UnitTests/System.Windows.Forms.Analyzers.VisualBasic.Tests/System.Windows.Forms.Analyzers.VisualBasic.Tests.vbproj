@@ -3,7 +3,12 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <LangVersion>15.5</LangVersion>
+    <RootNamespace>System.Windows.Forms.Analyzers.Tests</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="WFO1001\ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTests.vb" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
@@ -27,6 +32,13 @@
     <ProjectReference Include="..\..\..\..\System.Windows.Forms.Analyzers\src\System.Windows.Forms.Analyzers.csproj" />
     <ProjectReference Include="..\..\..\..\System.Windows.Forms.Analyzers\tests\UnitTests\System.Windows.Forms.Analyzers.Tests.csproj" />
     <ProjectReference Include="..\..\..\src\System.Windows.Forms.Analyzers.VisualBasic.vbproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="**\Data\*.vb" />
+    <Content Include="**\Data\*.vb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

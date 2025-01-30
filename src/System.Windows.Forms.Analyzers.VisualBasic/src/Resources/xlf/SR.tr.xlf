@@ -17,6 +17,21 @@
         <target state="translated">Özellik içeriği için kod serileştirme yapılandırması eksik</target>
         <note />
       </trans-unit>
+      <trans-unit id="WFO1001AnalyzerDescription">
+        <source>Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</source>
+        <target state="new">Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WFO1001AnalyzerMessageFormat">
+        <source>Custom data object {0} does not implement `ITypedDataObject` interface</source>
+        <target state="new">Custom data object {0} does not implement `ITypedDataObject` interface</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WFO1001AnalyzerTitle">
+        <source>`ITypedDataObject` interface is is not implemented by a custom data object</source>
+        <target state="new">`ITypedDataObject` interface is is not implemented by a custom data object</target>
+        <note />
+      </trans-unit>
       <trans-unit id="WFO2001AnalyzerDescription">
         <source>Avoid passing a `Func&lt;T&gt;` to `InvokeAsync` where `T` is a `Task` or `ValueTask`, unless your intention is for the delegate to simply be kicked off as an unsupervised task. Instead, use `Func&lt;CancellationToken, ValueTask&gt;` or `Func&lt;CancellationToken, ValueTask&lt;T&gt;&gt;`, so that the delegate passed to `InvokeAsync` can be awaited, allowing exceptions to be properly handled.</source>
         <target state="translated">Metot temsilcisinin basitçe denetlenmeyen bir görev olarak başlatılmasını amaçlamadığınız sürece, `T`'nin bir `Task` veya `ValueTask` olduğu `InvokeAsync`'e `Func&lt;T&gt;` geçirmekten kaçının. Bunun yerine, `Func&lt;CancellationToken, ValueTask&gt;` veya `Func&lt;CancellationToken, ValueTask&lt;T&gt;&gt;` kullanın, böylece `InvokeAsync`'e geçirilen metot temsilcisi beklenebilir ve özel durumların düzgün bir şekilde işlenmesine izin verilebilir.</target>

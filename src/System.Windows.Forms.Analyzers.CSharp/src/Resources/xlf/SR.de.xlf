@@ -67,6 +67,21 @@
         <target state="translated">Fehlende Codeserialisierungskonfiguration für Eigenschafteninhalt</target>
         <note />
       </trans-unit>
+      <trans-unit id="WFO1001AnalyzerDescription">
+        <source>Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</source>
+        <target state="new">Custom data object must implement `ITypedDataObject` interface in order to support the best practices in reading binary formatted data from the Clipboard or data being dragged and dropped.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WFO1001AnalyzerMessageFormat">
+        <source>Custom data object {0} does not implement `ITypedDataObject` interface</source>
+        <target state="new">Custom data object {0} does not implement `ITypedDataObject` interface</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="WFO1001AnalyzerTitle">
+        <source>`ITypedDataObject` interface is is not implemented by a custom data object</source>
+        <target state="new">`ITypedDataObject` interface is is not implemented by a custom data object</target>
+        <note />
+      </trans-unit>
       <trans-unit id="WFO2001AnalyzerDescription">
         <source>Avoid passing a `Func&lt;T&gt;` to `InvokeAsync` where `T` is a `Task` or `ValueTask`, unless your intention is for the delegate to simply be kicked off as an unsupervised task. Instead, use `Func&lt;CancellationToken, ValueTask&gt;` or `Func&lt;CancellationToken, ValueTask&lt;T&gt;&gt;`, so that the delegate passed to `InvokeAsync` can be awaited, allowing exceptions to be properly handled.</source>
         <target state="translated">Vermeiden Sie die Übergabe von „Func&lt;T&gt;“ an „InvokeAsync“, wobei „T“ ein „Task“ oder „ValueTask“ ist, es sei denn, Sie möchten, dass der Delegat einfach als nicht überwachte Aufgabe gestartet wird. Verwenden Sie stattdessen „Func&lt;CancellationToken, ValueTask&gt;“ oder „Func&lt;CancellationToken, ValueTask&lt;T&gt;&gt;“, damit der an „InvokeAsync“ übergebene Delegat erwartet werden kann, sodass Ausnahmen ordnungsgemäß behandelt werden können.</target>
