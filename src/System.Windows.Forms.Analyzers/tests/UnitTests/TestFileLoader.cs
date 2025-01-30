@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Windows.Forms.Analyzers.Tests;
@@ -44,5 +45,13 @@ internal static class TestFileLoader
         using var reader = new StreamReader(testFilePath, Encoding.UTF8);
 
         return await reader.ReadToEndAsync().ConfigureAwait(false);
+    }
+
+    public static async Task<string> GetTestCodeAsync(
+        [CallerMemberName] string testName = "",
+        [CallerFilePath] string filePath = "")
+    {
+        string toolName = Path.GetFileName(Path.GetDirectoryName(filePath))!;
+        return await LoadTestFileAsync(toolName, testName).ConfigureAwait(false);
     }
 }

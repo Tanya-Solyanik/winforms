@@ -1,15 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Windows.Forms.Analyzers.Diagnostics;
-using System.Windows.Forms.Analyzers.Tests;
 using System.Windows.Forms.CSharp.Analyzers.ImplementITypedDataObjectInAdditionToIDataObject;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 
-namespace System.Windows.Forms.Analyzers.CSharp.Tests;
+namespace System.Windows.Forms.Analyzers.Tests;
 
 public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTests
 {
@@ -19,7 +18,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task UntypedInterface()
     {
         // internal class UntypedInterface :IDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await RaiseTheWarning(input, [DiagnosticResult.CompilerWarning(DiagnosticId).WithSpan(10, 16, 10, 16 + nameof(UntypedInterface).Length)]);
     }
 
@@ -27,7 +26,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task UntypedWithAlias()
     {
         // internal class UntypedWithAlias : IManagedDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await RaiseTheWarning(input, [DiagnosticResult.CompilerWarning(DiagnosticId).WithSpan(10, 16, 10, 16 + nameof(UntypedWithAlias).Length)]);
     }
 
@@ -35,7 +34,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task UntypedWithNamespace()
     {
         // internal class UntypedWithNamespace :Forms.IDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await RaiseTheWarning(input, [DiagnosticResult.CompilerWarning(DiagnosticId).WithSpan(10, 16, 10, 16 + nameof(UntypedWithNamespace).Length)]);
     }
 
@@ -43,7 +42,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task UntypedUnimplemented()
     {
         // internal class UntypedUnimplemented :IDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await RaiseTheWarning(input,
             [
                 DiagnosticResult.CompilerWarning(DiagnosticId).WithSpan(10, 16, 10, 16 + nameof(UntypedUnimplemented).Length),
@@ -57,14 +56,14 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task Downlevel()
     {
         // Targeting NET9.
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await NoWarning(input);
     }
 
     [Fact]
     public async Task NoTargetAttribute()
     {
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await NoWarning(input);
     }
 
@@ -72,7 +71,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task TypedInterface()
     {
         // internal class TypedInterface :ITypedDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await NoWarning(input);
     }
 
@@ -80,7 +79,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task TypedWithNamespace()
     {
         // internal class TypedWithNamespace : Forms.ITypedDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await NoWarning(input);
     }
 
@@ -88,7 +87,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task TypedWithAlias()
     {
         // internal class TypedWithAlias : IManagedDataObject, System.Windows.Forms.IDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await NoWarning(input);
     }
 
@@ -96,7 +95,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task TwoInterfaces()
     {
         // internal class TwoInterfaces :IDataObject, ITypedDataObject
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await NoWarning(input);
     }
 
@@ -104,7 +103,7 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
     public async Task UnrelatedIDataObject()
     {
         // Name collision, this analyzer is not applicable
-        string input = await GetTestCodeAsync();
+        string input = await TestFileLoader.GetTestCodeAsync();
         await NoWarning(input);
     }
 
@@ -120,16 +119,28 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
 
     private static CSharpAnalyzerTest<ImplementITypedDataObjectInAdditionToIDataObjectAnalyzer, DefaultVerifier> CreateContext(string input)
     {
-        string currentNetCoreVersion = "10.0.0-alpha.1.25073.13";
-       // string currentDesktopVersion = "10.0.0-alpha.1.25073.1";
+        string currentNetCoreVersion = CurrentReferences.GetNetCoreRefVersion();
+        // string currentDesktopVersion = "10.0.0-alpha.1.25073.1";
+        string configuration =
+#if DEBUG
+            "Debug";
+#else
+            "Release";
+#endif
+        string dotNetVersion = CurrentReferences.GetDotNetVersion();
 
         // Specify the absolute paths to the reference assemblies
-        string netCoreAppRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.NETCore.App.Ref\{currentNetCoreVersion}\ref\net10.0";
-       // string winFormsRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.WindowsDesktop.App.Ref\{currentDesktopVersion}\ref\net10.0\System.Windows.Forms.dll";
-        string winFormsRefPath = $@"..\..\..\..\..\artifacts\obj\System.Windows.Forms\Debug\net10.0\ref\System.Windows.Forms.dll";
+        string netCoreAppRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.NETCore.App.Ref\{currentNetCoreVersion}\ref\{dotNetVersion}";
+        // string winFormsRefPath = $@"..\..\..\..\..\.dotnet\packs\Microsoft.WindowsDesktop.App.Ref\{currentDesktopVersion}\ref\{dotNetVersion}\System.Windows.Forms.dll";
+        string winFormsRefPath = $@"..\..\..\..\..\artifacts\obj\System.Windows.Forms\{configuration}\{dotNetVersion}\ref\System.Windows.Forms.dll";
+        if (CurrentReferences.TryGetSdkPath(out string? test))
+        {
+            Debug.WriteLine($"Using SDK version: {test}");
+        }
+
         // Create ReferenceAssemblies from the specified path.
         ReferenceAssemblies referenceAssemblies = new ReferenceAssemblies(
-            "net10.0",
+            dotNetVersion,
             new PackageIdentity("Microsoft.NETCore.App.Ref", currentNetCoreVersion),
             netCoreAppRefPath);
 
@@ -145,76 +156,5 @@ public sealed class ImplementITypedDataObjectInAdditionToIDataObjectAnalyzerTest
         };
 
         return context;
-    }
-
-#if false
-    static bool TryGetSdkVersion(
-     string rootFolderPath,
-     [NotNullWhen(true)] out string? version)
-    {
-        string globalJsonPath = Path.Combine(rootFolderPath, "global.json");
-        string globalJsonString = File.ReadAllText(globalJsonPath);
-        JsonObject? jsonObject = JsonNode.Parse(globalJsonString)?.AsObject();
-        version = (string?)jsonObject?["sdk"]?["version"];
-
-        return version is not null;
-    }
-
-    static bool CheckVersion(string sdkFolderPath, string version)
-    => Directory.Exists(Path.Combine(sdkFolderPath, "sdk", version));
-
-    static bool TryGetSdkFolderPath(
-            string rootFolderPath,
-            string version,
-            [NotNullWhen(true)] out string? sdkFolderPath,
-            [NotNullWhen(true)] out string? dotNetExePath)
-    {
-        // First, try to use the local .NET SDK if it's there.
-        sdkFolderPath = Path.Combine(rootFolderPath, ".dotnet");
-        dotNetExePath = Path.Combine(sdkFolderPath, "dotnet.exe");
-
-        if (CheckVersion(sdkFolderPath, version) && File.Exists(dotNetExePath))
-        {
-            return true;
-        }
-
-        // Next, see if there's a globally installed .NET SDK.
-        sdkFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet");
-        dotNetExePath = Path.Combine(sdkFolderPath, "dotnet.exe");
-
-        if (CheckVersion(sdkFolderPath, version) && File.Exists(dotNetExePath))
-        {
-            return true;
-        }
-
-        // Finally, see if there's an environment variable set.
-        sdkFolderPath = Environment.GetEnvironmentVariable("DOTNET_INSTALL_DIR");
-        if (string.IsNullOrEmpty(sdkFolderPath))
-        {
-            sdkFolderPath = null;
-            dotNetExePath = null;
-            return false;
-        }
-
-        sdkFolderPath = Path.Combine(sdkFolderPath, "dotnet");
-        dotNetExePath = Path.Combine(sdkFolderPath, "dotnet.exe");
-
-        if (CheckVersion(sdkFolderPath, version) && File.Exists(dotNetExePath))
-        {
-            return true;
-        }
-
-        sdkFolderPath = null;
-        dotNetExePath = null;
-        return false;
-    }
-#endif
-
-    private static async Task<string> GetTestCodeAsync(
-        [CallerMemberName] string testName = "",
-        [CallerFilePath] string filePath = "")
-    {
-        string toolName = Path.GetFileName(Path.GetDirectoryName(filePath))!;
-        return await TestFileLoader.LoadTestFileAsync(toolName, testName).ConfigureAwait(false);
     }
 }
