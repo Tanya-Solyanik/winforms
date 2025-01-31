@@ -55,17 +55,14 @@ public static class CurrentReferences
             netCoreRefsVersion = GetAvailableVersion(netCoreAppRefPath, $"{netCoreRefsVersion.Split('.')[0]}.");
         }
 
-        netCoreAppRefPath = Path.Combine(netCoreAppRefPath, netCoreRefsVersion, "ref", tfm);
-        Assert.True(Directory.Exists(netCoreAppRefPath));
-
         NetCoreRefsVersion = netCoreRefsVersion;
 
         // Create ReferenceAssemblies from the specified path.
         ReferenceAssemblies = new ReferenceAssemblies(
             tfm,
             new PackageIdentity(RefPackageName, netCoreRefsVersion),
-            Path.Combine("ref", tfm));
-              // .WithNuGetConfigFilePath = Path.Combine(RepoRootPath, "NuGet.Config");
+            Path.Combine("ref", tfm))
+               .WithNuGetConfigFilePath(Path.Combine(RepoRootPath, "NuGet.Config"));
         // https://github.com/dotnet/aspnetcore/blob/029978cdc937b96da9b38e5ba3cf658da636b541/src/Framework/AspNetCoreAnalyzers/test/Verifiers/CSharpAnalyzerVerifier.cs#L49-#L62
     }
 
