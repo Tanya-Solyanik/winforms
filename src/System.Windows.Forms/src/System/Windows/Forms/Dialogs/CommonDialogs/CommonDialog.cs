@@ -171,6 +171,18 @@ public abstract class CommonDialog : Component
             throw new InvalidOperationException(SR.CantShowModalOnNonInteractive);
         }
 
+        // When the user attempts to open the same dialog twice in a quick succession,
+        // the second dialog might start its initialization before the first dialog
+        // had been fully initialized and became modal. Specifically, the file open dialog
+        // allows the app to re-enter the message pump while it's initializing its folders
+        // view.
+        if (_priorWindowProcedure != 0)
+        {
+            // The previous subclass wasn't properly cleaned up,
+            // the prior WinProc is ours, we don't want to subclass ourselves.
+            return DialogResult.Cancel;
+        }
+
         // This will be used if there is no owner or active window.
         // Declared here so it can be kept alive.
         NativeWindow? nativeWindow = null;
@@ -204,7 +216,6 @@ public abstract class CommonDialog : Component
 
             WNDPROC ownerWindowProcedure = OwnerWndProcInternal;
             nint hookedWndProc = Marshal.GetFunctionPointerForDelegate(ownerWindowProcedure);
-            Debug.Assert(_priorWindowProcedure == 0, "The previous subclass wasn't properly cleaned up");
 
             try
             {
