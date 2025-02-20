@@ -10,7 +10,7 @@ internal static class SpanHelpers
     ///  terminating with null and truncating <paramref name="source"/> to fit if
     ///  necessary.
     /// </summary>
-    public static void CopyAndTerminate(this ReadOnlySpan<char> source, Span<char> destination)
+    public static void CopyAndTerminate(this ReadOnlySpan<char> source, ref Span<char> destination)
     {
         Debug.Assert(!destination.IsEmpty);
 

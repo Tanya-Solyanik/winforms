@@ -354,6 +354,7 @@ public partial class ToolStripMenuItem : ToolStripDropDownItem
     [Localizable(true)]
     [DefaultValue(Keys.None)]
     [SRDescription(nameof(SR.MenuItemShortCutDescr))]
+    [TypeConverter(typeof(MyKeysConverter))]
     public Keys ShortcutKeys
     {
         get => Properties.GetValueOrDefault(s_propShortcutKeys, Keys.None);
@@ -1121,4 +1122,10 @@ public partial class ToolStripMenuItem : ToolStripDropDownItem
 
         return ToolStripManager.ModalMenuFilter.InMenuMode;
     }
+}
+
+internal class MyKeysConverter : KeysConverter
+{
+    public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context) => new StandardValuesCollection(Array.Empty<object>());
+    public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => false;
 }
