@@ -209,9 +209,21 @@ internal unsafe partial class Composition<TOleServices, TNrbfSerializer, TDataFo
             Span<char> fileName = stackalloc char[(int)PInvokeCore.MAX_PATH + 1];
             string[] files = new string[count];
 
-            fixed (char* buffer = fileName)
+            for (uint i = 0; i < count; i++)
             {
-                for (uint i = 0; i < count; i++)
+                // Query the required buffer size, including the null terminator.
+                uint requiredSize = PInvokeCore.DragQueryFile(hdrop, i, null, 0);
+                if (requiredSize == 0)
+                {
+                    continue;
+                }
+
+                if (requiredSize < fileName.Length)
+                {
+                    fileName = new char[(int)requiredSize];
+                }
+
+                fixed (char* buffer = fileName)
                 {
                     uint charactersCopied = PInvokeCore.DragQueryFile(hdrop, i, buffer, (uint)fileName.Length);
                     if (charactersCopied == 0)

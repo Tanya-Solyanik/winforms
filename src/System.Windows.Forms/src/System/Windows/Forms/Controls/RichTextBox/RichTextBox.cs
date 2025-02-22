@@ -3265,12 +3265,15 @@ public partial class RichTextBox : TextBoxBase
             case PInvoke.EN_DROPFILES:
                 HDROP endropfiles = (HDROP)((ENDROPFILES*)m.LParamInternal)->hDrop;
 
+                // When the buffer is not provided, we get the length of the null-terminated file name.
+                uint length = PInvokeCore.DragQueryFile(endropfiles, iFile: 0, null, cch: 0);
+
                 // Only look at the first file.
-                using (BufferScope<char> buffer = new((int)PInvokeCore.MAX_PATH + 1))
+                using (BufferScope<char> buffer = new((int)length))
                 {
                     fixed (char* b = buffer)
                     {
-                        uint length = PInvokeCore.DragQueryFile(endropfiles, iFile: 0, b, cch: (uint)buffer.Length);
+                        length = PInvokeCore.DragQueryFile(endropfiles, iFile: 0, b, cch: (uint)buffer.Length);
                         if (length != 0)
                         {
                             // Try to load the file as RTF.
