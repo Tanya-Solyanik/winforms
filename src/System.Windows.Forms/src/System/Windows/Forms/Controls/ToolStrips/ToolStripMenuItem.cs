@@ -398,7 +398,7 @@ public partial class ToolStripMenuItem : ToolStripDropDownItem
             {
                 if (GetCurrentParentDropDown() is ToolStripDropDownMenu parent)
                 {
-                    LayoutTransaction.DoLayout(ParentInternal, this, "ShortcutKeys");
+                    LayoutTransaction.DoLayout(ParentInternal, this, nameof(ShortcutKeys));
                     parent.AdjustSize();
                 }
             }

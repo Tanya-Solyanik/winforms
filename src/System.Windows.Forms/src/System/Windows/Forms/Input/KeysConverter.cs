@@ -366,6 +366,10 @@ public class KeysConverter : TypeConverter, IComparer
         if (_values is null)
         {
             Keys[] values = [.. CultureToKeyName[CultureInfo.InvariantCulture].Values];
+            // Remove the Keys.None string from the standard values because it's a default value
+            // that indicates that key wasn't set.
+            values = [.. values.Where(key => key != Keys.None)];
+
             Array.Sort(values, this);
             _values = new StandardValuesCollection(values);
         }

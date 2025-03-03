@@ -1719,7 +1719,7 @@ internal sealed partial class PropertyGridView :
 
                 // Check real values against string values.
                 itemTextValue = gridEntry.TypeConverter.ConvertToString(currentValue);
-                if (value == currentValue || string.Compare(textValue, itemTextValue, true, CultureInfo.InvariantCulture) == 0)
+                if (value == currentValue || string.Compare(textValue, itemTextValue, ignoreCase: true, CultureInfo.InvariantCulture) == 0)
                 {
                     stringMatch = i;
                 }
@@ -3126,12 +3126,15 @@ internal sealed partial class PropertyGridView :
             return; // Do not scroll when the user system setting is 0 lines per notch
         }
 
-        Debug.Assert(_cumulativeVerticalWheelDelta > -PInvoke.WHEEL_DELTA, "cumulativeVerticalWheelDelta is too small");
-        Debug.Assert(_cumulativeVerticalWheelDelta < PInvoke.WHEEL_DELTA, "cumulativeVerticalWheelDelta is too big");
+        Debug.Assert(_cumulativeVerticalWheelDelta > -PInvoke.WHEEL_DELTA, $"{nameof(_cumulativeVerticalWheelDelta)} is too small");
+        Debug.Assert(_cumulativeVerticalWheelDelta < PInvoke.WHEEL_DELTA, $"{nameof(_cumulativeVerticalWheelDelta)} is too big");
 
         // Should this only work if the Edit has focus?
         // We use the mouse wheel to change the values in the dropdown if it's an enumerable value.
-        if (_selectedGridEntry is not null && _selectedGridEntry.Enumerable && EditTextBox.Focused && _selectedGridEntry.IsValueEditable)
+        if (_selectedGridEntry is not null
+            && _selectedGridEntry.Enumerable
+            && EditTextBox.Focused
+            && _selectedGridEntry.IsValueEditable)
         {
             int index = GetCurrentValueIndex(_selectedGridEntry);
             if (index != -1)
