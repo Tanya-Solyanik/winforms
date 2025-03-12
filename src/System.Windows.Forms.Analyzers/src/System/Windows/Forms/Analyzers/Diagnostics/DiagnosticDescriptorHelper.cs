@@ -14,8 +14,11 @@ internal static class DiagnosticDescriptorHelper
         string category,
         DiagnosticSeverity defaultSeverity,
         bool isEnabledByDefault = true,
-        LocalizableString? description = null,
-        params string[] customTags) => new DiagnosticDescriptor(
+        LocalizableString? description = null)
+    {
+        string helpLinkUri = string.Format(DiagnosticIDs.UrlFormat, id.ToLowerInvariant());
+
+        return new DiagnosticDescriptor(
             id,
             title,
             messageFormat,
@@ -23,6 +26,7 @@ internal static class DiagnosticDescriptorHelper
             defaultSeverity,
             isEnabledByDefault,
             description,
-            string.Format(DiagnosticIDs.UrlFormat, id.ToLowerInvariant()),
-            customTags);
+            helpLinkUri,
+            "winforms", "WinForms", "Windows Forms");
+    }
 }
