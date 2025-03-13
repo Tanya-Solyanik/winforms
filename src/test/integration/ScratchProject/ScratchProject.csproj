@@ -27,11 +27,41 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\System.Drawing.Common\src\System.Drawing.Common.csproj" />
-    <ProjectReference Include="..\..\..\System.Windows.Forms.Design\src\System.Windows.Forms.Design.csproj" />
-    <ProjectReference Include="..\..\..\System.Design\src\System.Design.Facade.csproj" />
-    <ProjectReference Include="..\..\..\System.Drawing.Design\src\System.Drawing.Design.Facade.csproj" />
     <ProjectReference Include="..\..\..\System.Windows.Forms\System.Windows.Forms.csproj" />
+    <ProjectReference Include="..\..\..\System.Drawing\src\System.Drawing.Facade.csproj" />
+  </ItemGroup>
+  
+  <!--<ItemGroup>
+    <Reference Include="$(ArtifactsBinDir)System.Drawing.Facade\$(Configuration)\net10.0\System.Drawing.dll" />
+  </ItemGroup>-->
+
+
+  <ItemGroup>
+    <DefaultReferenceExclusion Include="System.Drawing" />
   </ItemGroup>
 
+  <Target Name="FilterImplicitAssemblyReferences"
+          Condition="'@(DefaultReferenceExclusion)' != ''"
+          AfterTargets="ResolveTargetingPackAssets"
+          BeforeTargets="_HandlePackageFileConflicts;ResolveAssemblyReferences">
+    <ItemGroup>
+      <_referenceExclusion Include="@(DefaultReferenceExclusion)">
+        <AssemblyName>%(DefaultReferenceExclusion.Identity)</AssemblyName>
+        <ExternallyResolved>true</ExternallyResolved>
+      </_referenceExclusion>
+
+      <Reference Remove="@(_referenceExclusion)"
+                 MatchOnMetadata="AssemblyName;ExternallyResolved" />
+    </ItemGroup>
+
+  </Target>
+
+
+  <!--<Target Name="DropFrameworkWindowsBase" AfterTargets="ResolveTargetingPackAssets">
+        <ItemGroup>
+            <Reference Remove="@(Reference)" Condition="'%(FileName)' == 'System.Drawing' AND '%(Reference.ResolvedFrom)' == 'TargetingPack'" />
+    </ItemGroup>
+  </Target>-->
+  
+  
 </Project>

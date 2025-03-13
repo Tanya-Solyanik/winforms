@@ -182,4 +182,20 @@ public class DesignerAttributeTests
 
         Assert.NotNull(type);
     }
+
+    [Fact]
+    public void TypeEditorType()
+    {
+        Assembly currentAssembly = Assembly.GetExecutingAssembly();
+        AssemblyName[] referencedAssemblies = currentAssembly.GetReferencedAssemblies();
+
+        _output.WriteLine("Dependencies of the current assembly:");
+        foreach (var assemblyName in referencedAssemblies)
+        {
+            _output.WriteLine(assemblyName.FullName);
+        }
+
+        var type = Type.GetType($"System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+        Assert.NotNull(type);
+    }
 }

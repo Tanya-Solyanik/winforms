@@ -100,4 +100,28 @@
     <Compile Include="$(RepoRoot)src\Common\src\PlatformAttributes.cs" />
   </ItemGroup>
 
+      <!--
+  <ItemGroup>
+ This facade assembly should never resolve from the shared location. This solution does not reference desktop package,
+         and this facade might come from Microsoft.NETCore.App where System.Drawing facade is incomplete.
+    <DefaultReferenceExclusion Include="System.Drawing" />
+  </ItemGroup>
+
+  <Target Name="FilterImplicitAssemblyReferences"
+          Condition="'@(DefaultReferenceExclusion)' != ''"
+          AfterTargets="ResolveTargetingPackAssets"
+          BeforeTargets="_HandlePackageFileConflicts;ResolveAssemblyReferences">
+    <ItemGroup>
+      <_referenceExclusion Include="@(DefaultReferenceExclusion)">
+        <AssemblyName>%(DefaultReferenceExclusion.Identity)</AssemblyName>
+        <ExternallyResolved>true</ExternallyResolved>
+      </_referenceExclusion>
+
+      <Reference Remove="@(_referenceExclusion)"
+                 MatchOnMetadata="AssemblyName;ExternallyResolved" />
+    </ItemGroup>
+
+  </Target>
+   -->
+
 </Project>
