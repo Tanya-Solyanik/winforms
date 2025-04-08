@@ -10,9 +10,11 @@ internal static class Program
     [STAThread]
     public static void Main()
     {
-        Application.EnableVisualStyles();
-        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-        Form1 form = new();
-        Application.Run(form);
+        CauseStackOverflow();
+    }
+
+    private static void CauseStackOverflow()
+    {
+        CauseStackOverflow();
     }
 }

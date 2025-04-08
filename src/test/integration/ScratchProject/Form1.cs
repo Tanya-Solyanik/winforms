@@ -13,6 +13,7 @@ public partial class Form1 : Form
     {
         InitializeComponent();
 
+#if false
         TextBox textBox = new() { Location = new Point(10, 10) };
         Controls.Add(textBox);
         // Create a 256x256 icon for testing
@@ -27,5 +28,14 @@ public partial class Form1 : Form
         };
 
         errorProvider.SetError(textBox, "Test error");
+#endif
+
+        CauseStackOverflow();
+    }
+
+    private static void CauseStackOverflow()
+    {
+        // Infinite recursion without a base case
+        CauseStackOverflow();
     }
 }
