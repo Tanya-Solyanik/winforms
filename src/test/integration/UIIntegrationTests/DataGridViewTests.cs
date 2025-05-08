@@ -1,8 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using FluentAssertions;
 using Xunit.Abstractions;
 
 namespace System.Windows.Forms.UITests;
@@ -38,6 +40,85 @@ public class DataGridViewTests : ControlTestBase
             form.Close();
             dataTable.AcceptChanges();
         });
+    }
+
+    [WinFormsFact]
+    public void DataGridView_ClosesFormWhileDataGridViewInEditMode_WithBindingSource()
+    {
+        MyForm form = new MyForm();
+        Action action = () =>
+        {
+            form.DataGridView.CellEndEdit += (s, e) =>
+            {
+                // Close the form as soon as editing begins.
+                form.BeginInvoke(() => form.Close());
+            };
+
+            form.Shown += (s, e) =>
+            {
+                form.DataGridView.CurrentCell = form.DataGridView.Rows[0].Cells[0];
+                form.BeginInvoke(() => form.DataGridView.BeginEdit(true));
+            };
+
+            form.ShowDialog();
+        };
+
+        action.Should().NotThrow();
+        // ((Action)(() => form.Dispose())).Should().NotThrow();
+    }
+
+    public class MyForm : Form
+    {
+        private readonly IContainer _components = new Container();
+        public DataGridView DataGridView { get; init; } = new();
+
+        public MyForm()
+        {
+            DataGridView.Dock = DockStyle.Fill;
+            _components.Add(DataGridView);
+            Controls.Add(DataGridView);
+
+            DataGridViewTextBoxColumn nameColumn = new()
+            {
+                HeaderText = "Name",
+                DataPropertyName = "Name"
+            };
+            DataGridViewTextBoxColumn ageColumn = new()
+            {
+                HeaderText = "Age",
+                DataPropertyName = "Age"
+            };
+
+            DataGridView.Columns.AddRange([nameColumn, ageColumn]);
+
+            BindingList<DataRecord> dataRecordList =
+            [
+                new DataRecord { Name = "Alice", Age = 30 }
+            ];
+
+            BindingSource bindingSource = new(_components)
+            {
+                DataSource = dataRecordList
+            };
+
+            DataGridView.DataSource = bindingSource;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _components?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
+    public class DataRecord
+    {
+        public string Name { get; set; } = "";
+        public int Age { get; set; }
     }
 
     [WinFormsTheory]
